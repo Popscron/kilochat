@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+*md
+*expo-env.d.ts
+yarn.lock

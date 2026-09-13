@@ -1,0 +1,54 @@
+/**
+ * Shapes shared by the dummy data and the UI. They are intentionally close to
+ * what a messaging API would return so the static arrays can be swapped out.
+ */
+
+export const CURRENT_USER_ID = 'me';
+
+export type Contact = {
+  id: string;
+  name: string;
+  phone: string;
+  avatar?: string;
+  about?: string;
+  isOnline?: boolean;
+  lastSeen?: string; // ISO date
+};
+
+export type ChatType = 'direct' | 'group';
+
+export type Chat = {
+  id: string;
+  type: ChatType;
+  /** Participants excluding the current user. Direct chats have exactly one. */
+  participantIds: string[];
+  /** Only used by groups; direct chats take name/avatar from the contact. */
+  name?: string;
+  avatar?: string;
+  pinned?: boolean;
+  muted?: boolean;
+  favourite?: boolean;
+  archived?: boolean;
+  unreadCount: number;
+  disappearingMessages?: boolean;
+  pinnedMessage?: string;
+};
+
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+
+type MessageBase = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  createdAt: string; // ISO date
+  status?: MessageStatus;
+};
+
+export type Message =
+  | (MessageBase & { type: 'text'; text: string })
+  | (MessageBase & { type: 'image'; imageUri: string; caption?: string })
+  | (MessageBase & { type: 'voice'; durationSec: number })
+  | (MessageBase & { type: 'call'; callKind: 'voice' | 'video'; missed?: boolean })
+  | (MessageBase & { type: 'system'; text: string });
+
+export type MessageType = Message['type'];
