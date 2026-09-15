@@ -29,6 +29,11 @@ export const Colors = {
     glassFallback: 'rgba(255, 255, 255, 0.92)',
     glassShadow: 'rgba(0, 0, 0, 0.08)',
 
+    groupedBackground: '#F4F4F4',
+    groupedCard: '#FFFFFF',
+    groupedCardPressed: '#E5E5EA',
+    neutralBadge: '#6E6E73',
+
     wallpaper: '#EFEAE2',
     bubbleIncoming: '#FFFFFF',
     bubbleOutgoing: '#D9FDD3',
@@ -64,6 +69,11 @@ export const Colors = {
     glassFallback: 'rgba(28, 28, 30, 0.92)',
     glassShadow: 'rgba(0, 0, 0, 0.4)',
 
+    groupedBackground: '#000000',
+    groupedCard: '#1C1C1E',
+    groupedCardPressed: '#2C2C2E',
+    neutralBadge: '#636366',
+
     wallpaper: '#0B141A',
     bubbleIncoming: '#1F2C33',
     bubbleOutgoing: '#144D37',
@@ -94,6 +104,7 @@ export const Radius = {
   small: 8,
   medium: 12,
   bubble: 18,
+  card: 26,
   pill: 999,
 } as const;
 
@@ -115,6 +126,9 @@ export const Layout = {
   composerMinHeight: 40,
   bubbleMaxWidthRatio: 0.8,
   bubbleMaxWidth: 520,
+  profileAvatarSize: 120,
+  settingsRowHeight: 52,
+  settingsIconColumn: 44,
   /** Content is centred and capped on tablets / wide web windows. */
   maxContentWidth: 760,
 } as const;

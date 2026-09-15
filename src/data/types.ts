@@ -15,6 +15,11 @@ export type Contact = {
   lastSeen?: string; // ISO date
 };
 
+/** The signed-in user. `note` is the short status bubble shown above the avatar. */
+export type Profile = Omit<Contact, 'isOnline' | 'lastSeen'> & {
+  note?: string;
+};
+
 export type ChatType = 'direct' | 'group';
 
 export type Chat = {

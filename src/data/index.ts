@@ -5,10 +5,15 @@
 import { chats } from './chats';
 import { contacts, recentSearchContactIds } from './contacts';
 import { messages } from './messages';
-import { CURRENT_USER_ID, type Chat, type Contact, type Message } from './types';
+import { currentUser } from './profile';
+import { CURRENT_USER_ID, type Chat, type Contact, type Message, type Profile } from './types';
 
 export * from './types';
 export { chats, contacts, messages };
+
+export function getCurrentUser(): Profile {
+  return currentUser;
+}
 
 export type ChatFilter = 'all' | 'unread' | 'favourites' | 'groups';
 
