@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
@@ -15,10 +16,15 @@ import { ChatsTopBar } from '@/components/chat-list/chats-top-bar';
 import { SearchOverlay } from '@/components/search/search-overlay';
 import { useSearchTransition } from '@/components/search/use-search-transition';
 import { Layout, Spacing } from '@/constants/theme';
-import { getArchivedCount, getChatPreviews, type ChatFilter, type ChatPreview } from '@/data';
+import { getArchivedCount, getChatPreviews, useChatData, type ChatFilter, type ChatPreview } from '@/data';
+import { getSnapshot, markAllRead } from '@/data/store';
+import { markChatReadOnServer } from '@/api/client';
 import { useTheme } from '@/hooks/use-theme';
 
 const TITLE = 'Chats';
+const META_AI_FAB = require('../../../assets/images/meta-ai-orbit.png');
+const FAB_SIZE = 40;
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 49 : 56;
 
 export default function ChatsScreen() {
   const theme = useTheme();
@@ -26,7 +32,8 @@ export default function ChatsScreen() {
   const router = useRouter();
 
   const [filter, setFilter] = useState<ChatFilter>('all');
-  const previews = useMemo(() => getChatPreviews(filter), [filter]);
+  const data = useChatData();
+  const previews = useMemo(() => getChatPreviews(filter), [filter, data.version]);
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -48,6 +55,16 @@ export default function ChatsScreen() {
     [router]
   );
 
+  const handleMarkAllRead = useCallback(() => {
+    const unreadIds = getSnapshot()
+      .chats.filter((chat) => chat.unreadCount > 0)
+      .map((chat) => chat.id);
+    markAllRead();
+    unreadIds.forEach((id) => {
+      markChatReadOnServer(id).catch(() => {});
+    });
+  }, []);
+
   return (
     <View
       ref={search.containerRef}
@@ -56,7 +73,12 @@ export default function ChatsScreen() {
       <Animated.View
         pointerEvents={search.isOpen ? 'none' : 'auto'}
         style={[styles.container, { paddingTop: insets.top }, contentStyle]}>
-        <ChatsTopBar title={TITLE} scrollY={scrollY} />
+        <ChatsTopBar
+          title={TITLE}
+          scrollY={scrollY}
+          onGenerate={() => router.push('/generator')}
+          onMarkAllRead={handleMarkAllRead}
+        />
 
         <Animated.FlatList<ChatPreview>
           data={previews}
@@ -77,9 +99,20 @@ export default function ChatsScreen() {
           contentInsetAdjustmentBehavior="automatic"
           keyboardShouldPersistTaps="handled"
           style={styles.list}
-          contentContainerStyle={{ paddingBottom: Spacing.eight }}
+          contentContainerStyle={{ paddingBottom: Spacing.eight + FAB_SIZE }}
         />
       </Animated.View>
+
+      {!search.isOpen && (
+        <Pressable
+          accessibilityLabel="Meta AI"
+          style={[
+            styles.fab,
+            { bottom: insets.bottom + TAB_BAR_HEIGHT - Spacing.five * 2, right: Spacing.four },
+          ]}>
+          <Image source={META_AI_FAB} style={styles.fabImage} contentFit="contain" />
+        </Pressable>
+      )}
 
       {search.isOpen && <SearchOverlay search={search} onChatPress={openChat} />}
     </View>
@@ -94,5 +127,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: Layout.maxContentWidth,
     alignSelf: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    zIndex: 20,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  fabImage: {
+    width: FAB_SIZE,
+    height: FAB_SIZE,
   },
 });

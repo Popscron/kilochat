@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,8 +9,9 @@ import { ProfileHeader } from '@/components/profile/profile-header';
 import { ProfileTopBar } from '@/components/profile/profile-top-bar';
 import { SettingsSection, type SettingsItem } from '@/components/profile/settings-section';
 import { Layout, Spacing } from '@/constants/theme';
-import { getCurrentUser } from '@/data';
+import { useChatData } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
+import { resolvedColorScheme, setThemePreference } from '@/theme/preference';
 
 /** Same groups and order as WhatsApp's "You" tab. */
 const SECTIONS: SettingsItem[][] = [
@@ -53,7 +55,24 @@ const ALSO_FROM_META: AppShortcut[] = [
 export default function YouScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const profile = getCurrentUser();
+  const router = useRouter();
+  const data = useChatData();
+  const profile = data.currentUser;
+  const [avatarEpoch, setAvatarEpoch] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setAvatarEpoch((value) => value + 1);
+    }, [])
+  );
+
+  const openEditor = useCallback(() => router.push('/profile/edit'), [router]);
+
+  const onSettingPress = useCallback((key: string) => {
+    if (key === 'appearance') {
+      setThemePreference(resolvedColorScheme() === 'light' ? 'dark' : 'light');
+    }
+  }, []);
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -74,16 +93,26 @@ export default function YouScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.groupedBackground, paddingTop: insets.top }]}>
       <View style={styles.content}>
-        <ProfileTopBar title={profile.name} scrollY={scrollY} titleOffset={titleOffset} />
+        <ProfileTopBar
+          title={profile.name}
+          scrollY={scrollY}
+          titleOffset={titleOffset}
+          onEditPress={openEditor}
+        />
 
         <Animated.ScrollView
           onScroll={onScroll}
           scrollEventThrottle={16}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={styles.scrollContent}>
-          <ProfileHeader profile={profile} onNameLayout={onNameLayout} />
+          <ProfileHeader
+            key={`${profile.avatar ?? 'default'}-${avatarEpoch}`}
+            profile={profile}
+            onNameLayout={onNameLayout}
+            onAvatarPress={openEditor}
+          />
           {SECTIONS.map((items) => (
-            <SettingsSection key={items[0].key} items={items} />
+            <SettingsSection key={items[0].key} items={items} onItemPress={onSettingPress} />
           ))}
           <AppShortcutsSection title="Also from Meta" apps={ALSO_FROM_META} />
         </Animated.ScrollView>

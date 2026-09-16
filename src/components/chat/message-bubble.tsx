@@ -5,7 +5,7 @@ import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Icon } from '@/components/icon';
 import { MessageStatus } from '@/components/message-status';
 import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
-import type { Message } from '@/data';
+import { avatarImageSource } from '@/constants/avatars';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration, formatTime } from '@/utils/format';
 
@@ -100,7 +100,11 @@ export const MessageBubble = memo(function MessageBubble({
         {message.type === 'image' && (
           <>
             <Image
-              source={{ uri: message.imageUri }}
+              source={
+                message.imageUri.startsWith('asset:')
+                  ? avatarImageSource(message.imageUri)
+                  : { uri: message.imageUri }
+              }
               style={[styles.image, { width: Math.min(maxWidth - 6, 260) }]}
               contentFit="cover"
               transition={200}
@@ -140,6 +144,20 @@ export const MessageBubble = memo(function MessageBubble({
               {meta}
             </View>
           </View>
+        )}
+
+        {message.type === 'statusReply' && (
+          <>
+            <View style={[styles.statusQuote, { backgroundColor: fromMe ? theme.chipActiveBackground : theme.backgroundElement }]}>
+              <Icon name="status" size={16} color={theme.accent} />
+              <Text style={[styles.statusQuoteText, { color: theme.textSecondary }]}>Status</Text>
+            </View>
+            <Text style={[styles.text, { color: theme.text }]}>
+              {message.text}
+              {metaSpacer}
+            </Text>
+            <View style={styles.metaOverlay}>{meta}</View>
+          </>
         )}
 
         {message.type === 'call' && (
@@ -279,6 +297,19 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingVertical: Spacing.one,
     minWidth: 220,
+  },
+  statusQuote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    borderRadius: Radius.small,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one + 2,
+    marginBottom: Spacing.one,
+  },
+  statusQuoteText: {
+    fontSize: FontSize.footnote,
+    fontWeight: '600',
   },
   callIcon: {
     width: 36,

@@ -49,7 +49,7 @@ export function ChatsListHeader({
             pressed && { backgroundColor: theme.backgroundElement },
           ]}>
           <View style={styles.archivedIcon}>
-            <Icon name="archive" size={20} color={theme.textSecondary} />
+            <Icon name="archive" size={22} color={theme.textSecondary} />
           </View>
           <View style={[styles.archivedContent, { borderBottomColor: theme.separator }]}>
             <Text style={[styles.archivedLabel, { color: theme.text }]}>Archived</Text>

@@ -54,6 +54,7 @@ export type Message =
   | (MessageBase & { type: 'image'; imageUri: string; caption?: string })
   | (MessageBase & { type: 'voice'; durationSec: number })
   | (MessageBase & { type: 'call'; callKind: 'voice' | 'video'; missed?: boolean })
+  | (MessageBase & { type: 'statusReply'; text: string })
   | (MessageBase & { type: 'system'; text: string });
 
 export type MessageType = Message['type'];

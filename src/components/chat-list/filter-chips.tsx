@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { FontSize, Radius, Spacing } from '@/constants/theme';
-import { getFilterCount, type ChatFilter } from '@/data';
+import { getFilterCount, useChatData, type ChatFilter } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 const FILTERS: { key: ChatFilter; label: string; showCount?: boolean }[] = [
@@ -18,6 +18,7 @@ type FilterChipsProps = {
 
 export function FilterChips({ value, onChange }: FilterChipsProps) {
   const theme = useTheme();
+  useChatData();
 
   return (
     <ScrollView

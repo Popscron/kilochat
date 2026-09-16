@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { GlassIconButton } from '@/components/glass-surface';
+import { MoreMenu } from '@/components/chat-list/more-menu';
 import { FontSize, Layout, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -11,7 +13,8 @@ export const LARGE_TITLE_COLLAPSE_OFFSET = 44;
 type ChatsTopBarProps = {
   title: string;
   scrollY: SharedValue<number>;
-  onMorePress?: () => void;
+  onGenerate?: () => void;
+  onMarkAllRead?: () => void;
   onCameraPress?: () => void;
   onNewChatPress?: () => void;
 };
@@ -19,11 +22,13 @@ type ChatsTopBarProps = {
 export function ChatsTopBar({
   title,
   scrollY,
-  onMorePress,
+  onGenerate,
+  onMarkAllRead,
   onCameraPress,
   onNewChatPress,
 }: ChatsTopBarProps) {
   const theme = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const smallTitleStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
@@ -40,7 +45,11 @@ export function ChatsTopBar({
 
   return (
     <View style={styles.bar}>
-      <GlassIconButton icon="more" accessibilityLabel="More options" onPress={onMorePress} />
+      <GlassIconButton
+        icon="more"
+        accessibilityLabel="More options"
+        onPress={() => setMenuOpen(true)}
+      />
 
       <Animated.Text
         style={[styles.smallTitle, { color: theme.text }, smallTitleStyle]}
@@ -60,6 +69,13 @@ export function ChatsTopBar({
 
       <Animated.View
         style={[styles.divider, { backgroundColor: theme.separator }, dividerStyle]}
+      />
+
+      <MoreMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onGenerate={() => onGenerate?.()}
+        onMarkAllRead={() => onMarkAllRead?.()}
       />
     </View>
   );

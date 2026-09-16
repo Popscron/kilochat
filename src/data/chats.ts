@@ -1,11 +1,11 @@
 import type { Chat } from './types';
+import { generatedAvatarUri } from '@/constants/avatars';
 
 export const chats: Chat[] = [
   {
     id: 'chat-1',
     type: 'direct',
     participantIds: ['c1'],
-    pinned: true,
     unreadCount: 0,
     disappearingMessages: true,
   },
@@ -14,16 +14,14 @@ export const chats: Chat[] = [
     type: 'group',
     name: 'Project Advance Features',
     participantIds: ['c3', 'c4', 'c9', 'c8'],
-    pinned: true,
     unreadCount: 0,
   },
   {
     id: 'chat-3',
     type: 'group',
     name: 'Design Review (You)',
-    avatar: 'https://picsum.photos/id/1062/200/200',
+    avatar: generatedAvatarUri('group-design'),
     participantIds: ['c9'],
-    pinned: true,
     favourite: true,
     unreadCount: 0,
   },
@@ -39,7 +37,7 @@ export const chats: Chat[] = [
     id: 'chat-5',
     type: 'group',
     name: '🏆 Weekend Football ⚽️',
-    avatar: 'https://picsum.photos/id/1058/200/200',
+    avatar: generatedAvatarUri('group-football'),
     participantIds: ['c6', 'c10', 'c1', 'c12'],
     muted: true,
     unreadCount: 12,

@@ -16,6 +16,8 @@ function describe(message: Message): { icon?: IconName; text: string } {
       return { icon: 'cameraFill', text: message.caption ?? 'Photo' };
     case 'voice':
       return { icon: 'micFill', text: `Voice message (${formatDuration(message.durationSec)})` };
+    case 'statusReply':
+      return { icon: 'status', text: message.text };
     case 'call':
       return {
         icon: message.callKind === 'video' ? 'videoFill' : 'phoneFill',

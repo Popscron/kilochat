@@ -14,6 +14,7 @@ type ChatHeaderProps = {
   subtitle?: string;
   avatar?: string;
   isGroup?: boolean;
+  showTimerBadge?: boolean;
   backBadge?: number;
   onBack: () => void;
   onProfilePress?: () => void;
@@ -28,6 +29,7 @@ export function ChatHeader({
   subtitle,
   avatar,
   isGroup,
+  showTimerBadge,
   backBadge,
   onBack,
   onProfilePress,
@@ -63,7 +65,12 @@ export function ChatHeader({
         <Pressable onPress={onProfilePress} style={styles.flex} accessibilityRole="button">
           {({ pressed }) => (
             <GlassSurface style={[styles.pill, styles.profilePill, { height: pillHeight }, pressed && styles.pressed]}>
-              <Avatar uri={avatar} size={pillHeight - Spacing.two * 1.5} isGroup={isGroup} />
+              <Avatar
+                uri={avatar}
+                size={pillHeight - Spacing.two * 1.5}
+                isGroup={isGroup}
+                showTimerBadge={showTimerBadge}
+              />
               <View style={styles.flex}>
                 <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
                   {title}

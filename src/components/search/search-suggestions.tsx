@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '@/components/avatar';
 import { Icon, type IconName } from '@/components/icon';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
-import { getRecentSearchContacts, type Contact } from '@/data';
+import { getRecentSearchContacts, useChatData, type Contact } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 const MEDIA_SHORTCUTS: { label: string; icon: IconName }[] = [
@@ -26,6 +26,7 @@ type SearchSuggestionsProps = {
 /** Shown in search mode before the user types: recent searches + media shortcuts. */
 export function SearchSuggestions({ onContactPress, onMediaPress }: SearchSuggestionsProps) {
   const theme = useTheme();
+  useChatData();
   const [recent, setRecent] = useState(getRecentSearchContacts);
 
   return (

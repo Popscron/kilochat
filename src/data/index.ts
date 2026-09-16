@@ -1,18 +1,19 @@
 /**
- * Read-only selectors over the dummy arrays. Screens only talk to these
- * functions, so replacing the arrays with API calls later is a local change.
+ * Read-only selectors over the chat store. Screens talk to these functions so
+ * dummy arrays and the live API share the same shape.
  */
-import { chats } from './chats';
-import { contacts, recentSearchContactIds } from './contacts';
-import { messages } from './messages';
-import { currentUser } from './profile';
-import { CURRENT_USER_ID, type Chat, type Contact, type Message, type Profile } from './types';
+import { getSnapshot } from './store';
+import type { Chat, Contact, Message, Profile } from './types';
 
 export * from './types';
-export { chats, contacts, messages };
+export { useChatData } from './store';
 
 export function getCurrentUser(): Profile {
-  return currentUser;
+  return getSnapshot().currentUser;
+}
+
+export function getCurrentUserId(): string {
+  return getSnapshot().currentUser.id;
 }
 
 export type ChatFilter = 'all' | 'unread' | 'favourites' | 'groups';
@@ -30,14 +31,16 @@ export type MessageSearchResult = {
   preview: ChatPreview;
 };
 
-const contactsById = new Map(contacts.map((contact) => [contact.id, contact]));
+function contactsById() {
+  return new Map(getSnapshot().contacts.map((contact) => [contact.id, contact]));
+}
 
 export function getContact(id: string): Contact | undefined {
-  return contactsById.get(id);
+  return contactsById().get(id);
 }
 
 export function getChat(id: string): Chat | undefined {
-  return chats.find((chat) => chat.id === id);
+  return getSnapshot().chats.find((chat) => chat.id === id);
 }
 
 export function getChatTitle(chat: Chat): string {
@@ -51,8 +54,8 @@ export function getChatAvatar(chat: Chat): string | undefined {
 }
 
 export function getMessagesForChat(chatId: string): Message[] {
-  return messages
-    .filter((message) => message.chatId === chatId)
+  return getSnapshot()
+    .messages.filter((message) => message.chatId === chatId)
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 }
 
@@ -73,8 +76,8 @@ const lastActivity = (preview: ChatPreview) =>
 
 /** Non-archived chats, pinned first, then most recent activity. */
 export function getChatPreviews(filter: ChatFilter = 'all'): ChatPreview[] {
-  return chats
-    .filter((chat) => !chat.archived && matchesFilter(chat, filter))
+  return getSnapshot()
+    .chats.filter((chat) => !chat.archived && matchesFilter(chat, filter))
     .map(getChatPreview)
     .sort((a, b) => {
       if (!!a.chat.pinned !== !!b.chat.pinned) return a.chat.pinned ? -1 : 1;
@@ -96,29 +99,31 @@ function matchesFilter(chat: Chat, filter: ChatFilter): boolean {
 }
 
 export function getFilterCount(filter: ChatFilter): number {
-  return chats.filter((chat) => !chat.archived && matchesFilter(chat, filter)).length;
+  return getSnapshot().chats.filter((chat) => !chat.archived && matchesFilter(chat, filter)).length;
 }
 
 export function getArchivedCount(): number {
-  return chats.filter((chat) => chat.archived).length;
+  return getSnapshot().chats.filter((chat) => chat.archived).length;
 }
 
 export function getTotalUnreadCount(excludeChatId?: string): number {
-  return chats
-    .filter((chat) => !chat.archived && chat.id !== excludeChatId)
+  return getSnapshot()
+    .chats.filter((chat) => !chat.archived && chat.id !== excludeChatId)
     .reduce((sum, chat) => sum + chat.unreadCount, 0);
 }
 
 export function getRecentSearchContacts(): Contact[] {
-  return recentSearchContactIds.map(getContact).filter((c): c is Contact => !!c);
+  return getSnapshot()
+    .recentSearchContactIds.map(getContact)
+    .filter((c): c is Contact => !!c);
 }
 
 export function getDirectChatForContact(contactId: string): Chat | undefined {
-  return chats.find((chat) => chat.type === 'direct' && chat.participantIds[0] === contactId);
+  return getSnapshot().chats.find((chat) => chat.type === 'direct' && chat.participantIds[0] === contactId);
 }
 
 export function isFromMe(message: Message): boolean {
-  return message.senderId === CURRENT_USER_ID;
+  return message.senderId === getCurrentUserId();
 }
 
 /** Case-insensitive search across chat titles and text messages. */
@@ -129,6 +134,7 @@ export function searchChats(query: string): {
   const needle = query.trim().toLowerCase();
   if (!needle) return { chats: [], messages: [] };
 
+  const { chats, messages } = getSnapshot();
   const previews = chats.map(getChatPreview);
   const previewsById = new Map(previews.map((preview) => [preview.chat.id, preview]));
 

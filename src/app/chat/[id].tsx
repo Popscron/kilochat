@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,19 +8,22 @@ import { Composer } from '@/components/chat/composer';
 import { DateSeparator } from '@/components/chat/date-separator';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { PinnedBanner } from '@/components/chat/pinned-banner';
+import { sendMessage } from '@/api/client';
 import { Spacing } from '@/constants/theme';
 import {
-  CURRENT_USER_ID,
   getChat,
   getChatAvatar,
   getChatTitle,
   getContact,
+  getCurrentUserId,
   getMessagesForChat,
   getTotalUnreadCount,
   isFromMe,
+  useChatData,
   type Chat,
   type Message,
 } from '@/data';
+import { addMessage, markChatRead, replaceMessage } from '@/data/store';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDaySeparator, formatLastSeen, isSameDay } from '@/utils/format';
 
@@ -65,13 +68,14 @@ export default function ChatScreen() {
   const router = useRouter();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const data = useChatData();
 
   const chat = getChat(id);
-  const [sentMessages, setSentMessages] = useState<Message[]>([]);
-  const rows = useMemo(
-    () => buildRows([...getMessagesForChat(id), ...sentMessages]),
-    [id, sentMessages]
-  );
+  const rows = useMemo(() => buildRows(getMessagesForChat(id)), [id, data.version]);
+
+  useEffect(() => {
+    if (id) markChatRead(id);
+  }, [id]);
 
   if (!chat) {
     return (
@@ -87,18 +91,19 @@ export default function ChatScreen() {
   };
 
   const handleSend = (text: string) => {
-    setSentMessages((current) => [
-      ...current,
-      {
-        id: `local-${Date.now()}`,
-        chatId: chat.id,
-        senderId: CURRENT_USER_ID,
-        type: 'text',
-        text,
-        createdAt: new Date().toISOString(),
-        status: 'sent',
-      },
-    ]);
+    const local: Message = {
+      id: `local-${Date.now()}`,
+      chatId: chat.id,
+      senderId: getCurrentUserId(),
+      type: 'text',
+      text,
+      createdAt: new Date().toISOString(),
+      status: 'sending',
+    };
+    addMessage(local);
+    sendMessage(chat.id, text)
+      .then((result) => replaceMessage(local.id, result.message))
+      .catch(() => replaceMessage(local.id, { ...local, status: 'sent' }));
   };
 
   const topSpace =
@@ -111,6 +116,7 @@ export default function ChatScreen() {
         subtitle={getSubtitle(chat)}
         avatar={getChatAvatar(chat)}
         isGroup={chat.type === 'group'}
+        showTimerBadge={chat.disappearingMessages}
         backBadge={getTotalUnreadCount(chat.id)}
         onBack={() => router.back()}>
         {chat.pinnedMessage && <PinnedBanner text={chat.pinnedMessage} />}

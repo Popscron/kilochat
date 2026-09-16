@@ -6,7 +6,7 @@ import { ChatListItem } from '@/components/chat-list/chat-list-item';
 import { HighlightedText } from '@/components/highlighted-text';
 import { MessageStatus } from '@/components/message-status';
 import { FontSize, Spacing } from '@/constants/theme';
-import { isFromMe, searchChats, type MessageSearchResult } from '@/data';
+import { isFromMe, searchChats, useChatData, type MessageSearchResult } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { formatChatListDate } from '@/utils/format';
 
@@ -17,7 +17,8 @@ type SearchResultsProps = {
 
 export function SearchResults({ query, onChatPress }: SearchResultsProps) {
   const theme = useTheme();
-  const results = useMemo(() => searchChats(query), [query]);
+  const data = useChatData();
+  const results = useMemo(() => searchChats(query), [query, data.version]);
 
   if (results.chats.length === 0 && results.messages.length === 0) {
     return (

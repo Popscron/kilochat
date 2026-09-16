@@ -2,7 +2,11 @@ import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
+import { avatarImageSource, DEFAULT_AVATAR_KEY, isDefaultAvatar } from '@/constants/avatars';
 import { useTheme } from '@/hooks/use-theme';
+
+/** Default PNGs already include transparent padding (~16%). Full-bleed photos do not. */
+const DEFAULT_CONTENT_RATIO = 0.84;
 
 type AvatarProps = {
   uri?: string;
@@ -12,30 +16,38 @@ type AvatarProps = {
   showTimerBadge?: boolean;
 };
 
+function usesPaddedAsset(uri?: string) {
+  return isDefaultAvatar(uri) || uri === 'asset:0';
+}
+
 export function Avatar({ uri, size, isGroup, showTimerBadge }: AvatarProps) {
   const theme = useTheme();
-  const radius = size / 2;
+  const padded = usesPaddedAsset(uri);
+  const mediaSize = padded ? size : Math.round(size * DEFAULT_CONTENT_RATIO);
+  const radius = mediaSize / 2;
   const badgeSize = Math.round(size * 0.36);
+  const source = avatarImageSource(uri);
 
   return (
-    <View style={{ width: size, height: size }}>
-      {uri ? (
+    <View style={[styles.frame, { width: size, height: size }]}>
+      {source ? (
         <Image
-          source={{ uri }}
-          style={{ width: size, height: size, borderRadius: radius }}
+          key={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
+          source={source}
+          style={{ width: mediaSize, height: mediaSize, borderRadius: radius, overflow: 'hidden' }}
           contentFit="cover"
-          transition={150}
-          recyclingKey={uri}
+          transition={0}
+          recyclingKey={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
         />
       ) : (
         <View
           style={[
             styles.placeholder,
-            { width: size, height: size, borderRadius: radius, backgroundColor: theme.avatarPlaceholder },
+            { width: mediaSize, height: mediaSize, borderRadius: radius, backgroundColor: theme.avatarPlaceholder },
           ]}>
           <Icon
             name={isGroup ? 'group' : 'person'}
-            size={size * 0.5}
+            size={mediaSize * 0.5}
             color={theme.avatarPlaceholderIcon}
           />
         </View>
@@ -52,7 +64,7 @@ export function Avatar({ uri, size, isGroup, showTimerBadge }: AvatarProps) {
               backgroundColor: theme.background,
             },
           ]}>
-          <Icon name="timer" size={badgeSize * 0.7} color={theme.textSecondary} />
+          <Icon name="timer" size={badgeSize * 0.78} color={theme.textSecondary} />
         </View>
       )}
     </View>
@@ -60,6 +72,10 @@ export function Avatar({ uri, size, isGroup, showTimerBadge }: AvatarProps) {
 }
 
 const styles = StyleSheet.create({
+  frame: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   placeholder: {
     alignItems: 'center',
     justifyContent: 'center',

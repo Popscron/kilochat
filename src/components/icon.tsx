@@ -1,7 +1,12 @@
+import { Image } from 'expo-image';
 import type { AndroidSymbol } from 'expo-symbols';
 import { SymbolView } from 'expo-symbols';
-import type { ColorValue, StyleProp, ViewStyle } from 'react-native';
+import { Platform, type ColorValue, type StyleProp, type ViewStyle } from 'react-native';
 import type { SFSymbol } from 'sf-symbols-typescript';
+
+const ARCHIVE_ICON = require('../../assets/icons/archive.png');
+const STATUS_ICON = require('../../assets/icons/status.png');
+const SUBSCRIPTIONS_ICON = require('../../assets/icons/subscriptions.png');
 
 /**
  * One name → SF Symbol on iOS, Material Symbol on Android/web.
@@ -28,7 +33,7 @@ const ICONS = {
   send: { ios: 'paperplane.fill', android: 'send' },
   group: { ios: 'person.2.fill', android: 'group' },
   person: { ios: 'person.fill', android: 'account_circle' },
-  timer: { ios: 'timer', android: 'timer' },
+  timer: { ios: 'clock', android: 'schedule' },
   gif: { ios: 'photo.on.rectangle', android: 'gif_box' },
   link: { ios: 'safari', android: 'explore' },
   document: { ios: 'doc', android: 'description' },
@@ -36,6 +41,7 @@ const ICONS = {
   northWest: { ios: 'arrow.up.left.circle', android: 'north_west' },
   close: { ios: 'xmark', android: 'close' },
   updates: { ios: 'circle.dashed.inset.filled', android: 'data_usage' },
+  status: { ios: 'circle.dashed.inset.filled', android: 'data_usage' },
   calls: { ios: 'phone', android: 'call' },
   communities: { ios: 'person.3', android: 'groups' },
   chats: { ios: 'bubble.left.and.bubble.right', android: 'chat' },
@@ -80,14 +86,37 @@ type IconProps = {
   style?: StyleProp<ViewStyle>;
 };
 
+const PNG_ICONS = {
+  archive: ARCHIVE_ICON,
+  status: STATUS_ICON,
+  subscriptions: SUBSCRIPTIONS_ICON,
+} as const;
+
 export function Icon({ name, size = 22, color, style }: IconProps) {
+  const png = name in PNG_ICONS ? PNG_ICONS[name as keyof typeof PNG_ICONS] : undefined;
+  if (png) {
+    return (
+      <Image
+        source={png}
+        style={[{ width: size, height: size }, style]}
+        contentFit="contain"
+        tintColor={color}
+      />
+    );
+  }
+
   const { ios, android } = ICONS[name];
+  // WhatsApp's pin leans right. SF `pin.fill` is upright; Material `keep` is already tilted.
+  const pinSlant =
+    name === 'pin' && Platform.OS === 'ios'
+      ? { transform: [{ rotate: '40deg' }] as const }
+      : null;
   return (
     <SymbolView
       name={{ ios, android, web: android }}
       size={size}
       tintColor={color}
-      style={[{ width: size, height: size }, style]}
+      style={[{ width: size, height: size }, pinSlant, style]}
     />
   );
 }
