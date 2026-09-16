@@ -1,3 +1,4 @@
+import { Entypo } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { AndroidSymbol } from 'expo-symbols';
 import { SymbolView } from 'expo-symbols';
@@ -7,6 +8,7 @@ import type { SFSymbol } from 'sf-symbols-typescript';
 const ARCHIVE_ICON = require('../../assets/icons/archive.png');
 const STATUS_ICON = require('../../assets/icons/status.png');
 const SUBSCRIPTIONS_ICON = require('../../assets/icons/subscriptions.png');
+const VOICE_UNREAD_ICON = require('../../assets/icons/voice-unread.png');
 
 /**
  * One name → SF Symbol on iOS, Material Symbol on Android/web.
@@ -24,6 +26,7 @@ const ICONS = {
   check: { ios: 'checkmark', android: 'check' },
   mic: { ios: 'mic', android: 'mic' },
   micFill: { ios: 'mic.fill', android: 'mic' },
+  micUnread: { ios: 'mic.fill', android: 'mic' },
   phone: { ios: 'phone', android: 'call' },
   phoneFill: { ios: 'phone.fill', android: 'call' },
   video: { ios: 'video', android: 'videocam' },
@@ -90,9 +93,16 @@ const PNG_ICONS = {
   archive: ARCHIVE_ICON,
   status: STATUS_ICON,
   subscriptions: SUBSCRIPTIONS_ICON,
+  micUnread: VOICE_UNREAD_ICON,
 } as const;
 
+const PNG_KEEP_COLOR = new Set<IconName>(['micUnread']);
+
 export function Icon({ name, size = 22, color, style }: IconProps) {
+  if (name === 'camera') {
+    return <Entypo name="camera" size={size} color={color} style={style} />;
+  }
+
   const png = name in PNG_ICONS ? PNG_ICONS[name as keyof typeof PNG_ICONS] : undefined;
   if (png) {
     return (
@@ -100,7 +110,7 @@ export function Icon({ name, size = 22, color, style }: IconProps) {
         source={png}
         style={[{ width: size, height: size }, style]}
         contentFit="contain"
-        tintColor={color}
+        tintColor={PNG_KEEP_COLOR.has(name) ? undefined : color}
       />
     );
   }

@@ -140,10 +140,12 @@ function DraftCard({
                   draft.category === 'photo'
                     ? 'cameraFill'
                     : draft.category === 'voice'
-                      ? 'micFill'
+                      ? draft.unread
+                        ? 'micUnread'
+                        : 'micFill'
                       : 'status'
                 }
-                size={14}
+                size={18}
                 color={theme.textSecondary}
               />
               <Text style={[styles.message, { color: theme.textSecondary }]} numberOfLines={1}>

@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { restoreSession, signInWithPhone as authenticatePhone } from '@/api/session';
+import { restoreSession, signInWithPhone as authenticatePhone, signOut as clearSession } from '@/api/session';
 
 type AuthContextValue = {
   ready: boolean;
   signedIn: boolean;
   signIn: (phone: string) => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,6 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn: async (phone: string) => {
         await authenticatePhone(phone);
         setSignedIn(true);
+      },
+      signOut: async () => {
+        await clearSession();
+        setSignedIn(false);
       },
     }),
     [ready, signedIn]

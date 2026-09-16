@@ -7,7 +7,7 @@ import { isFromMe, type ChatPreview, type Message } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDuration } from '@/utils/format';
 
-function describe(message: Message): { icon?: IconName; text: string } {
+function describe(message: Message, unreadIncoming: boolean): { icon?: IconName; text: string } {
   switch (message.type) {
     case 'text':
     case 'system':
@@ -15,7 +15,10 @@ function describe(message: Message): { icon?: IconName; text: string } {
     case 'image':
       return { icon: 'cameraFill', text: message.caption ?? 'Photo' };
     case 'voice':
-      return { icon: 'micFill', text: `Voice message (${formatDuration(message.durationSec)})` };
+      return {
+        icon: unreadIncoming ? 'micUnread' : 'micFill',
+        text: `Voice message (${formatDuration(message.durationSec)})`,
+      };
     case 'statusReply':
       return { icon: 'status', text: message.text };
     case 'call':
@@ -37,7 +40,8 @@ export function MessagePreview({ preview, numberOfLines = 2 }: MessagePreviewPro
   if (!lastMessage) return <View style={styles.flex} />;
 
   const fromMe = isFromMe(lastMessage);
-  const { icon, text } = describe(lastMessage);
+  const unreadIncoming = !fromMe && chat.unreadCount > 0;
+  const { icon, text } = describe(lastMessage, unreadIncoming);
   const showStatus = fromMe && lastMessage.type !== 'system';
   const senderPrefix =
     chat.type === 'group' && lastMessage.type !== 'system'
@@ -55,7 +59,7 @@ export function MessagePreview({ preview, numberOfLines = 2 }: MessagePreviewPro
           {icon && !!senderPrefix && (
             <Text style={[styles.prefix, { color: theme.textSecondary }]}>{senderPrefix}</Text>
           )}
-          {icon && <Icon name={icon} size={14} color={iconColor} />}
+          {icon && <Icon name={icon} size={18} color={iconColor} />}
         </View>
       )}
       <Text
@@ -81,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
     marginRight: Spacing.one,
-    height: 20,
+    height: 22,
   },
   prefix: {
     fontSize: FontSize.subhead,

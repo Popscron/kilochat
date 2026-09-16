@@ -68,19 +68,24 @@ export default function YouScreen() {
 
   const openEditor = useCallback(() => router.push('/profile/edit'), [router]);
 
-  const onSettingPress = useCallback((key: string) => {
-    if (key === 'appearance') {
-      setThemePreference(resolvedColorScheme() === 'light' ? 'dark' : 'light');
-    }
-  }, []);
+  const onSettingPress = useCallback(
+    (key: string) => {
+      if (key === 'account') {
+        router.push('/you/account');
+        return;
+      }
+      if (key === 'appearance') {
+        setThemePreference(resolvedColorScheme() === 'light' ? 'dark' : 'light');
+      }
+    },
+    [router]
+  );
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
     scrollY.set(event.contentOffset.y);
   });
 
-  // The header starts right below the bar-height padding, so the name's bottom edge
-  // inside the header is exactly the scroll offset at which it slides under the bar.
   const titleOffset = useSharedValue(0);
   const onNameLayout = useCallback(
     (event: LayoutChangeEvent) => {

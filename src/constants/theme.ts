@@ -120,8 +120,8 @@ export const FontSize = {
 export const Layout = {
   topBarHeight: 52,
   searchFieldHeight: 38,
-  chatAvatarSize: 56,
-  chatRowVerticalPadding: 10,
+  chatAvatarSize: 68,
+  chatRowVerticalPadding: 5,
   headerIconButtonSize: 44,
   composerMinHeight: 40,
   bubbleMaxWidthRatio: 0.8,

@@ -5,8 +5,8 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { avatarImageSource, DEFAULT_AVATAR, isDefaultAvatar } from '@/constants/avatars';
 
 /** Native tab icons are ~25–27pt. Full-size photos fill the iOS 26 selected pill. */
-const ICON_PT = 28;
-const ICON_PX = 84;
+const ICON_PT = 34;
+const ICON_PX = 102;
 
 const prepared = new Map<string, ImageSourcePropType>();
 
