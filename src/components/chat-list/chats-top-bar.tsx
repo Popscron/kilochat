@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { GlassIconButton } from '@/components/glass-surface';
-import { MoreMenu } from '@/components/chat-list/more-menu';
 import { FontSize, Layout, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -13,8 +11,11 @@ export const LARGE_TITLE_COLLAPSE_OFFSET = 44;
 type ChatsTopBarProps = {
   title: string;
   scrollY: SharedValue<number>;
-  onGenerate?: () => void;
-  onMarkAllRead?: () => void;
+  /** Selection mode: the "…" button becomes a done checkmark and the actions hide. */
+  selecting?: boolean;
+  onDonePress?: () => void;
+  /** Opens the chats menu (rendered by the screen so it can cover the list). */
+  onMorePress?: () => void;
   onCameraPress?: () => void;
   onNewChatPress?: () => void;
 };
@@ -22,13 +23,13 @@ type ChatsTopBarProps = {
 export function ChatsTopBar({
   title,
   scrollY,
-  onGenerate,
-  onMarkAllRead,
+  selecting = false,
+  onDonePress,
+  onMorePress,
   onCameraPress,
   onNewChatPress,
 }: ChatsTopBarProps) {
   const theme = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const smallTitleStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
@@ -45,11 +46,11 @@ export function ChatsTopBar({
 
   return (
     <View style={styles.bar}>
-      <GlassIconButton
-        icon="more"
-        accessibilityLabel="More options"
-        onPress={() => setMenuOpen(true)}
-      />
+      {selecting ? (
+        <GlassIconButton icon="check" accessibilityLabel="Done" onPress={onDonePress} />
+      ) : (
+        <GlassIconButton icon="more" accessibilityLabel="More options" onPress={onMorePress} />
+      )}
 
       <Animated.Text
         style={[styles.smallTitle, { color: theme.text }, smallTitleStyle]}
@@ -57,25 +58,20 @@ export function ChatsTopBar({
         {title}
       </Animated.Text>
 
-      <View style={styles.actions}>
-        <GlassIconButton icon="camera" accessibilityLabel="Camera" onPress={onCameraPress} />
-        <GlassIconButton
-          icon="plus"
-          accessibilityLabel="New chat"
-          prominent
-          onPress={onNewChatPress}
-        />
-      </View>
+      {!selecting && (
+        <View style={styles.actions}>
+          <GlassIconButton icon="camera" accessibilityLabel="Camera" onPress={onCameraPress} />
+          <GlassIconButton
+            icon="plus"
+            accessibilityLabel="New chat"
+            prominent
+            onPress={onNewChatPress}
+          />
+        </View>
+      )}
 
       <Animated.View
         style={[styles.divider, { backgroundColor: theme.separator }, dividerStyle]}
-      />
-
-      <MoreMenu
-        visible={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        onGenerate={() => onGenerate?.()}
-        onMarkAllRead={() => onMarkAllRead?.()}
       />
     </View>
   );

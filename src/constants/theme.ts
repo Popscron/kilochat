@@ -28,11 +28,23 @@ export const Colors = {
 
     glassFallback: 'rgba(255, 255, 255, 0.92)',
     glassShadow: 'rgba(0, 0, 0, 0.08)',
+    /** Menus and toolbars floating over the list; rows show through faintly. */
+    floatingSurface: 'rgba(255, 255, 255, 0.92)',
+    floatingShadow: 'rgba(0, 0, 0, 0.14)',
 
     groupedBackground: '#F4F4F4',
     groupedCard: '#FFFFFF',
     groupedCardPressed: '#E5E5EA',
     neutralBadge: '#6E6E73',
+
+    destructive: '#E0164C',
+    swipeRead: '#1F8A55',
+    statusRing: '#25D366',
+    statusRingViewed: '#C9C9CE',
+    swipeNeutral: '#76767B',
+    swipeArchive: '#2F7BF5',
+    rowSelected: '#F0F0F4',
+    checkboxBorder: '#C7C7CC',
 
     wallpaper: '#EFEAE2',
     bubbleIncoming: '#FFFFFF',
@@ -68,11 +80,22 @@ export const Colors = {
 
     glassFallback: 'rgba(28, 28, 30, 0.92)',
     glassShadow: 'rgba(0, 0, 0, 0.4)',
+    floatingSurface: 'rgba(44, 44, 46, 0.92)',
+    floatingShadow: 'rgba(0, 0, 0, 0.6)',
 
     groupedBackground: '#000000',
     groupedCard: '#1C1C1E',
     groupedCardPressed: '#2C2C2E',
     neutralBadge: '#636366',
+
+    destructive: '#FF4F6E',
+    swipeRead: '#1F8A55',
+    statusRing: '#25D366',
+    statusRingViewed: '#3C4B52',
+    swipeNeutral: '#636366',
+    swipeArchive: '#2F7BF5',
+    rowSelected: '#1C1C1E',
+    checkboxBorder: '#48484A',
 
     wallpaper: '#0B141A',
     bubbleIncoming: '#1F2C33',
@@ -129,6 +152,8 @@ export const Layout = {
   profileAvatarSize: 120,
   settingsRowHeight: 52,
   settingsIconColumn: 44,
+  swipeActionWidth: 74,
+  selectionColumn: 40,
   /** Content is centred and capped on tablets / wide web windows. */
   maxContentWidth: 760,
 } as const;

@@ -3,10 +3,14 @@ import { StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
 import { avatarImageSource, DEFAULT_AVATAR_KEY, isDefaultAvatar } from '@/constants/avatars';
+import type { StatusRing } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 /** Default PNGs already include transparent padding (~16%). Full-bleed photos do not. */
 const DEFAULT_CONTENT_RATIO = 0.84;
+/** Status ring: stroke and the gap between it and the photo, as in WhatsApp. */
+const RING_WIDTH = 2;
+const RING_GAP = 2.5;
 
 type AvatarProps = {
   uri?: string;
@@ -14,43 +18,73 @@ type AvatarProps = {
   isGroup?: boolean;
   /** Small badge in the bottom-right corner (e.g. disappearing messages timer). */
   showTimerBadge?: boolean;
+  /** Ring for a posted status: green when unseen, grey once seen. */
+  statusRing?: StatusRing;
 };
 
 function usesPaddedAsset(uri?: string) {
   return isDefaultAvatar(uri) || uri === 'asset:0';
 }
 
-export function Avatar({ uri, size, isGroup, showTimerBadge }: AvatarProps) {
+export function Avatar({ uri, size, isGroup, showTimerBadge, statusRing }: AvatarProps) {
   const theme = useTheme();
   const padded = usesPaddedAsset(uri);
   const mediaSize = padded ? size : Math.round(size * DEFAULT_CONTENT_RATIO);
+  // What the eye sees: padded assets draw their art inside transparent margins,
+  // so the placeholder and the ring follow that diameter, not the frame.
+  const visibleSize = Math.round(size * DEFAULT_CONTENT_RATIO);
+  // Drawn around the avatar rather than inside it, so rows keep their layout.
+  const ringSize = visibleSize + (RING_WIDTH + RING_GAP) * 2;
   const radius = mediaSize / 2;
   const badgeSize = Math.round(size * 0.36);
   const source = avatarImageSource(uri);
 
+  const media = source ? (
+    <Image
+      key={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
+      source={source}
+      style={{ width: mediaSize, height: mediaSize, borderRadius: radius, overflow: 'hidden' }}
+      contentFit="cover"
+      transition={0}
+      recyclingKey={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
+    />
+  ) : (
+    <View
+      style={[
+        styles.placeholder,
+        {
+          width: visibleSize,
+          height: visibleSize,
+          borderRadius: visibleSize / 2,
+          backgroundColor: theme.avatarPlaceholder,
+        },
+      ]}>
+      <Icon
+        name={isGroup ? 'group' : 'person'}
+        size={visibleSize * 0.5}
+        color={theme.avatarPlaceholderIcon}
+      />
+    </View>
+  );
+
   return (
     <View style={[styles.frame, { width: size, height: size }]}>
-      {source ? (
-        <Image
-          key={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
-          source={source}
-          style={{ width: mediaSize, height: mediaSize, borderRadius: radius, overflow: 'hidden' }}
-          contentFit="cover"
-          transition={0}
-          recyclingKey={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
-        />
-      ) : (
+      {/* The ring wraps the avatar so both share one centre. */}
+      {statusRing ? (
         <View
           style={[
-            styles.placeholder,
-            { width: mediaSize, height: mediaSize, borderRadius: radius, backgroundColor: theme.avatarPlaceholder },
+            styles.ring,
+            {
+              width: ringSize,
+              height: ringSize,
+              borderRadius: ringSize / 2,
+              borderColor: statusRing === 'unviewed' ? theme.statusRing : theme.statusRingViewed,
+            },
           ]}>
-          <Icon
-            name={isGroup ? 'group' : 'person'}
-            size={mediaSize * 0.5}
-            color={theme.avatarPlaceholderIcon}
-          />
+          {media}
         </View>
+      ) : (
+        media
       )}
 
       {showTimerBadge && (
@@ -77,6 +111,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    borderWidth: RING_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
   },

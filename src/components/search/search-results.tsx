@@ -80,7 +80,12 @@ function MessageResultItem({ result, query, onPress }: MessageResultItemProps) {
     <Pressable
       onPress={() => onPress(preview.chat.id)}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.backgroundElement }]}>
-      <Avatar uri={preview.avatar} size={44} isGroup={preview.chat.type === 'group'} />
+      <Avatar
+        uri={preview.avatar}
+        size={44}
+        isGroup={preview.chat.type === 'group'}
+        statusRing={preview.statusRing}
+      />
       <View style={[styles.content, { borderBottomColor: theme.separator }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>

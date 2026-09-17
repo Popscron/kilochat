@@ -140,15 +140,11 @@ export function replaceMessage(localId: string, message: Message) {
 }
 
 export function markChatRead(chatId: string) {
-  emit({
-    chats: snapshot.chats.map((chat) => (chat.id === chatId ? { ...chat, unreadCount: 0 } : chat)),
-  });
+  markChatsRead([chatId]);
 }
 
 export function markAllRead() {
-  emit({
-    chats: snapshot.chats.map((chat) => (chat.unreadCount ? { ...chat, unreadCount: 0 } : chat)),
-  });
+  markChatsRead(snapshot.chats.map((chat) => chat.id));
 }
 
 export function updateCurrentUser(patch: Partial<Profile>) {
@@ -213,4 +209,83 @@ export function applyGeneratedChats(items: GeneratedInboxChat[]) {
   });
 
   emit({ contacts, chats, messages });
+}
+
+/*
+ * Chat list actions (swipe, selection mode and the "More" sheet). Pin, mute,
+ * archive, delete and clear are local only for now; there is no API for them yet.
+ */
+
+/** WhatsApp only allows three pinned chats. */
+export const MAX_PINNED_CHATS = 3;
+
+export function isChatUnread(chat: Chat): boolean {
+  return chat.unreadCount > 0 || !!chat.markedUnread;
+}
+
+/** Applies `update` to the given chats; returning `null` removes the chat. */
+function updateChats(ids: readonly string[], update: (chat: Chat) => Chat | null) {
+  const targets = new Set(ids);
+  let changed = false;
+  const chats: Chat[] = [];
+  for (const chat of snapshot.chats) {
+    if (!targets.has(chat.id)) {
+      chats.push(chat);
+      continue;
+    }
+    const updated = update(chat);
+    if (updated !== chat) changed = true;
+    if (updated) chats.push(updated);
+  }
+  if (changed) emit({ chats });
+}
+
+export function markChatsRead(ids: readonly string[]) {
+  updateChats(ids, (chat) =>
+    isChatUnread(chat) ? { ...chat, unreadCount: 0, markedUnread: false } : chat
+  );
+}
+
+export function markChatUnread(id: string) {
+  updateChats([id], (chat) => (isChatUnread(chat) ? chat : { ...chat, markedUnread: true }));
+}
+
+/** Returns `false` when the pin limit is reached. */
+export function toggleChatPinned(id: string): boolean {
+  const chat = snapshot.chats.find((c) => c.id === id);
+  if (!chat) return false;
+  if (!chat.pinned) {
+    const pinnedCount = snapshot.chats.filter((c) => c.pinned && !c.archived).length;
+    if (pinnedCount >= MAX_PINNED_CHATS) return false;
+  }
+  updateChats([id], (c) => ({ ...c, pinned: !c.pinned }));
+  return true;
+}
+
+export function setChatsArchived(ids: readonly string[], archived: boolean) {
+  // Archived chats lose their pin, like WhatsApp.
+  updateChats(ids, (chat) =>
+    chat.archived === archived ? chat : { ...chat, archived, pinned: archived ? false : chat.pinned }
+  );
+}
+
+export function deleteChats(ids: readonly string[]) {
+  updateChats(ids, () => null);
+}
+
+export function toggleChatMuted(id: string) {
+  updateChats([id], (chat) => ({ ...chat, muted: !chat.muted }));
+}
+
+export function toggleChatFavourite(id: string) {
+  updateChats([id], (chat) => ({ ...chat, favourite: !chat.favourite }));
+}
+
+export function clearChat(id: string) {
+  updateChats([id], (chat) => ({
+    ...chat,
+    clearedAt: new Date().toISOString(),
+    unreadCount: 0,
+    markedUnread: false,
+  }));
 }

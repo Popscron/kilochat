@@ -4,6 +4,7 @@ import Stack from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AuthProvider, useAuth } from '@/auth/context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -42,6 +43,17 @@ function RootNavigator() {
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="chat/[id]" />
+        <Stack.Screen
+          name="chat-actions/[id]"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: false,
+            sheetCornerRadius: 34,
+            animation: 'default',
+            contentStyle: { backgroundColor: theme.groupedBackground },
+          }}
+        />
         <Stack.Screen name="generator" />
         <Stack.Screen name="profile/edit" />
       </Stack>
@@ -52,13 +64,18 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   splash: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,

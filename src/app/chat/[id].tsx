@@ -1,7 +1,7 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsPreview, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CHAT_HEADER_HEIGHT, ChatHeader } from '@/components/chat/chat-header';
 import { Composer } from '@/components/chat/composer';
@@ -9,10 +9,11 @@ import { DateSeparator } from '@/components/chat/date-separator';
 import { MessageBubble } from '@/components/chat/message-bubble';
 import { PinnedBanner } from '@/components/chat/pinned-banner';
 import { sendMessage } from '@/api/client';
-import { Spacing } from '@/constants/theme';
+import { FontSize, Spacing } from '@/constants/theme';
 import {
   getChat,
   getChatAvatar,
+  getChatStatusRing,
   getChatTitle,
   getContact,
   getCurrentUserId,
@@ -28,6 +29,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { formatDaySeparator, formatLastSeen, isSameDay } from '@/utils/format';
 
 const PINNED_BANNER_SPACE = 48;
+const PREVIEW_HEADER_HEIGHT = 44;
+/** A hold-to-preview has no status bar or home indicator to avoid. */
+const NO_INSETS = { top: 0, bottom: 0, left: 0, right: 0 };
 
 type ChatRow =
   | { kind: 'date'; key: string; label: string }
@@ -67,15 +71,18 @@ export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const isPreview = useIsPreview();
+  const safeInsets = useSafeAreaInsets();
+  const insets = isPreview ? NO_INSETS : safeInsets;
   const data = useChatData();
 
   const chat = getChat(id);
   const rows = useMemo(() => buildRows(getMessagesForChat(id)), [id, data.version]);
 
+  // Peeking at a chat doesn't read it, like WhatsApp.
   useEffect(() => {
-    if (id) markChatRead(id);
-  }, [id]);
+    if (id && !isPreview) markChatRead(id);
+  }, [id, isPreview]);
 
   if (!chat) {
     return (
@@ -106,21 +113,35 @@ export default function ChatScreen() {
       .catch(() => replaceMessage(local.id, { ...local, status: 'sent' }));
   };
 
-  const topSpace =
-    insets.top + CHAT_HEADER_HEIGHT + (chat.pinnedMessage ? PINNED_BANNER_SPACE : 0) + Spacing.two;
+  const topSpace = isPreview
+    ? PREVIEW_HEADER_HEIGHT + Spacing.two
+    : insets.top + CHAT_HEADER_HEIGHT + (chat.pinnedMessage ? PINNED_BANNER_SPACE : 0) + Spacing.two;
 
-  return (
+  const content = (
     <View style={[styles.flex, { backgroundColor: theme.wallpaper }]}>
-      <ChatHeader
-        title={getChatTitle(chat)}
-        subtitle={getSubtitle(chat)}
-        avatar={getChatAvatar(chat)}
-        isGroup={chat.type === 'group'}
-        showTimerBadge={chat.disappearingMessages}
-        backBadge={getTotalUnreadCount(chat.id)}
-        onBack={() => router.back()}>
-        {chat.pinnedMessage && <PinnedBanner text={chat.pinnedMessage} />}
-      </ChatHeader>
+      {isPreview ? (
+        <View
+          style={[
+            styles.previewHeader,
+            { backgroundColor: theme.floatingSurface, borderBottomColor: theme.separator },
+          ]}>
+          <Text style={[styles.previewTitle, { color: theme.text }]} numberOfLines={1}>
+            {getChatTitle(chat)}
+          </Text>
+        </View>
+      ) : (
+        <ChatHeader
+          title={getChatTitle(chat)}
+          subtitle={getSubtitle(chat)}
+          avatar={getChatAvatar(chat)}
+          isGroup={chat.type === 'group'}
+          showTimerBadge={chat.disappearingMessages}
+          statusRing={getChatStatusRing(chat)}
+          backBadge={getTotalUnreadCount(chat.id)}
+          onBack={() => router.back()}>
+          {chat.pinnedMessage && <PinnedBanner text={chat.pinnedMessage} />}
+        </ChatHeader>
+      )}
 
       <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <FlatList
@@ -157,6 +178,12 @@ export default function ChatScreen() {
       </KeyboardAvoidingView>
     </View>
   );
+
+  return isPreview ? (
+    <SafeAreaInsetsContext.Provider value={NO_INSETS}>{content}</SafeAreaInsetsContext.Provider>
+  ) : (
+    content
+  );
 }
 
 const styles = StyleSheet.create({
@@ -166,5 +193,21 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  previewHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: PREVIEW_HEADER_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.four,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 1,
+  },
+  previewTitle: {
+    fontSize: FontSize.body,
+    fontWeight: '600',
   },
 });

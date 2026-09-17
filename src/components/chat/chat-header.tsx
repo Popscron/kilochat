@@ -5,6 +5,7 @@ import { Avatar } from '@/components/avatar';
 import { GlassSurface } from '@/components/glass-surface';
 import { Icon } from '@/components/icon';
 import { FontSize, HitSlop, Layout, Radius, Spacing } from '@/constants/theme';
+import type { StatusRing } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 export const CHAT_HEADER_HEIGHT = Layout.headerIconButtonSize + Spacing.three;
@@ -15,6 +16,7 @@ type ChatHeaderProps = {
   avatar?: string;
   isGroup?: boolean;
   showTimerBadge?: boolean;
+  statusRing?: StatusRing;
   backBadge?: number;
   onBack: () => void;
   onProfilePress?: () => void;
@@ -30,6 +32,7 @@ export function ChatHeader({
   avatar,
   isGroup,
   showTimerBadge,
+  statusRing,
   backBadge,
   onBack,
   onProfilePress,
@@ -70,6 +73,7 @@ export function ChatHeader({
                 size={pillHeight - Spacing.two * 1.5}
                 isGroup={isGroup}
                 showTimerBadge={showTimerBadge}
+                statusRing={statusRing}
               />
               <View style={styles.flex}>
                 <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>

@@ -38,6 +38,27 @@ export function GlassSurface({ children, style, tintColor }: GlassSurfaceProps) 
   );
 }
 
+/**
+ * Frosted-looking card for menus and toolbars that float over list content,
+ * like WhatsApp's: mostly opaque white with a soft shadow, so rows behind it
+ * show only faintly. Native glass is avoided here on purpose: over the list it
+ * renders see-through or not at all when these views are shown and hidden.
+ */
+export function FloatingSurface({ children, style }: Omit<GlassSurfaceProps, 'tintColor'>) {
+  const theme = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.floating,
+        { backgroundColor: theme.floatingSurface, shadowColor: theme.floatingShadow },
+        style,
+      ]}>
+      {children}
+    </View>
+  );
+}
+
 type GlassIconButtonProps = {
   icon: IconName;
   onPress?: () => void;
@@ -78,6 +99,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
+  },
+  floating: {
+    borderCurve: 'continuous',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 8,
   },
   iconButton: {
     alignItems: 'center',

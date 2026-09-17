@@ -35,6 +35,10 @@ export type Chat = {
   favourite?: boolean;
   archived?: boolean;
   unreadCount: number;
+  /** "Mark as unread": shows a green dot without a count. */
+  markedUnread?: boolean;
+  /** Messages at or before this date are hidden ("Clear chat"). */
+  clearedAt?: string; // ISO date
   disappearingMessages?: boolean;
   pinnedMessage?: string;
 };

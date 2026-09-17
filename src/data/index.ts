@@ -2,11 +2,13 @@
  * Read-only selectors over the chat store. Screens talk to these functions so
  * dummy arrays and the live API share the same shape.
  */
-import { getSnapshot } from './store';
+import { getStatusRing, type StatusRing } from './statuses';
+import { getSnapshot, isChatUnread } from './store';
 import type { Chat, Contact, Message, Profile } from './types';
 
 export * from './types';
-export { useChatData } from './store';
+export { getStatusRing, type StatusRing } from './statuses';
+export { isChatUnread, useChatData } from './store';
 
 export function getCurrentUser(): Profile {
   return getSnapshot().currentUser;
@@ -22,6 +24,7 @@ export type ChatPreview = {
   chat: Chat;
   title: string;
   avatar?: string;
+  statusRing?: StatusRing;
   lastMessage?: Message;
   lastMessageSender?: Contact;
 };
@@ -53,9 +56,18 @@ export function getChatAvatar(chat: Chat): string | undefined {
   return getContact(chat.participantIds[0])?.avatar;
 }
 
+/** Groups never show a status ring; direct chats follow the contact. */
+export function getChatStatusRing(chat: Chat): StatusRing | undefined {
+  return chat.type === 'group' ? undefined : getStatusRing(chat.participantIds[0]);
+}
+
 export function getMessagesForChat(chatId: string): Message[] {
+  const clearedAt = getChat(chatId)?.clearedAt;
+  const clearedTime = clearedAt ? Date.parse(clearedAt) : -Infinity;
   return getSnapshot()
-    .messages.filter((message) => message.chatId === chatId)
+    .messages.filter(
+      (message) => message.chatId === chatId && Date.parse(message.createdAt) > clearedTime
+    )
     .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 }
 
@@ -66,13 +78,18 @@ export function getChatPreview(chat: Chat): ChatPreview {
     chat,
     title: getChatTitle(chat),
     avatar: getChatAvatar(chat),
+    statusRing: getChatStatusRing(chat),
     lastMessage,
     lastMessageSender: lastMessage ? getContact(lastMessage.senderId) : undefined,
   };
 }
 
-const lastActivity = (preview: ChatPreview) =>
-  preview.lastMessage ? Date.parse(preview.lastMessage.createdAt) : 0;
+/** A cleared chat keeps its place in the list, like WhatsApp. */
+const lastActivity = ({ lastMessage, chat }: ChatPreview) =>
+  Math.max(
+    lastMessage ? Date.parse(lastMessage.createdAt) : 0,
+    chat.clearedAt ? Date.parse(chat.clearedAt) : 0
+  );
 
 /** Non-archived chats, pinned first, then most recent activity. */
 export function getChatPreviews(filter: ChatFilter = 'all'): ChatPreview[] {
@@ -88,7 +105,7 @@ export function getChatPreviews(filter: ChatFilter = 'all'): ChatPreview[] {
 function matchesFilter(chat: Chat, filter: ChatFilter): boolean {
   switch (filter) {
     case 'unread':
-      return chat.unreadCount > 0;
+      return isChatUnread(chat);
     case 'favourites':
       return !!chat.favourite;
     case 'groups':
@@ -145,9 +162,18 @@ export function searchChats(query: string): {
     messages: messages
       .filter(
         (message): message is Message & { type: 'text' } =>
-          message.type === 'text' && message.text.toLowerCase().includes(needle)
+          message.type === 'text' &&
+          message.text.toLowerCase().includes(needle) &&
+          isVisible(message, previewsById.get(message.chatId))
       )
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
       .map((message) => ({ message, preview: previewsById.get(message.chatId)! })),
   };
+}
+
+/** Deleted chats and cleared history never show up in search. */
+function isVisible(message: Message, preview: ChatPreview | undefined): boolean {
+  if (!preview) return false;
+  const { clearedAt } = preview.chat;
+  return !clearedAt || Date.parse(message.createdAt) > Date.parse(clearedAt);
 }

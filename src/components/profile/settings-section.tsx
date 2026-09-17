@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Icon, type IconName } from '@/components/icon';
 import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
@@ -16,19 +16,24 @@ export type SettingsItem = {
   dot?: boolean;
   /** Opens outside the app, so it shows ↗ instead of a chevron. */
   external?: boolean;
+  /** Plain action row (e.g. a sheet): no chevron or arrow. */
+  hideAccessory?: boolean;
+  /** Red icon and label, e.g. "Delete chat". */
+  destructive?: boolean;
 };
 
 type SettingsSectionProps = {
   items: SettingsItem[];
   onItemPress?: (key: string) => void;
+  style?: StyleProp<ViewStyle>;
 };
 
 /** Rounded inset card of rows, like WhatsApp's "You" tab on iOS. */
-export function SettingsSection({ items, onItemPress }: SettingsSectionProps) {
+export function SettingsSection({ items, onItemPress, style }: SettingsSectionProps) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.groupedCard }]}>
+    <View style={[styles.card, { backgroundColor: theme.groupedCard }, style]}>
       {items.map((item, index) => (
         <SettingsRow
           key={item.key}
@@ -49,7 +54,8 @@ type SettingsRowProps = {
 
 const SettingsRow = memo(function SettingsRow({ item, isLast, onPress }: SettingsRowProps) {
   const theme = useTheme();
-  const { key, label, icon, subtitle, badge, dot, external } = item;
+  const { key, label, icon, subtitle, badge, dot, external, hideAccessory, destructive } = item;
+  const tint = destructive ? theme.destructive : theme.text;
 
   return (
     <Pressable
@@ -58,7 +64,7 @@ const SettingsRow = memo(function SettingsRow({ item, isLast, onPress }: Setting
       accessibilityLabel={badge ? `${label}, ${badge} new` : label}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.groupedCardPressed }]}>
       <View style={styles.iconColumn}>
-        <Icon name={icon} size={24} color={theme.icon} />
+        <Icon name={icon} size={24} color={destructive ? theme.destructive : theme.icon} />
       </View>
 
       <View
@@ -67,7 +73,7 @@ const SettingsRow = memo(function SettingsRow({ item, isLast, onPress }: Setting
           !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.separator },
         ]}>
         <View style={styles.labels}>
-          <Text style={[styles.label, { color: theme.text }]} numberOfLines={1}>
+          <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
             {label}
           </Text>
           {!!subtitle && (
@@ -82,11 +88,13 @@ const SettingsRow = memo(function SettingsRow({ item, isLast, onPress }: Setting
               <Text style={styles.badgeText}>{badge}</Text>
             </View>
           )}
-          <Icon
-            name={external ? 'external' : 'chevronRight'}
-            size={external ? 16 : 15}
-            color={theme.textSecondary}
-          />
+          {!hideAccessory && (
+            <Icon
+              name={external ? 'external' : 'chevronRight'}
+              size={external ? 16 : 15}
+              color={theme.textSecondary}
+            />
+          )}
         </View>
       </View>
     </Pressable>
