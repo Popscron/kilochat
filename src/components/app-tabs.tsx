@@ -15,10 +15,9 @@ const CHATS_TAB_SELECTED_ASSET = require('../../assets/icons/chats-tab-selected.
 const COMMUNITIES_TAB_ASSET = require('../../assets/icons/communities-tab.png');
 
 /**
- * You-tab photos are data-URI PNGs so Expo Go on a real phone can display them.
- * NativeTabs uses the bitmap's point size. These PNGs are shipped as @3x.
- * Pass width/height in points and scale 3 so iOS 26 does not treat the raw
- * pixel size as the tab icon size. Compact phones get a smaller point size.
+ * NativeTabs uses the bitmap's point size (RCTResizeModeCenter), not a
+ * layout box. Tab PNGs are 31pt, with @3x next to them. Never pass the
+ * 427px default avatar here — it fills the whole bar in production builds.
  */
 function nativeTabImage(asset: number, pt: number): ImageSourcePropType {
   const resolved = Image.resolveAssetSource(asset);

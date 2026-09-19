@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dimensions, Image, PixelRatio, type ImageSourcePropType } from 'react-native';
+import { Dimensions, Image, type ImageSourcePropType } from 'react-native';
 import { File, Paths } from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -12,13 +12,16 @@ import {
 } from '@/constants/avatars';
 import { makeCircularImage } from '@/profile/circle-png';
 
+/** Same intrinsic size as chats/status tab PNGs. NativeTabs uses pixel size. */
+const YOU_TAB_ASSET = require('../../assets/icons/you-tab.png');
+
 /**
  * Visible photo diameter inside the tab slot. Glyph tab PNGs have padding;
  * a full-bleed circle reads larger, especially on Pro Max.
  */
 const PHOTO_INSET = 0.82;
 const DEFAULT_VISIBLE_RATIO = 0.84;
-const CURRENT_META = 'you-tab-current-v6.json';
+const CURRENT_META = 'you-tab-current-v7.json';
 
 const prepared = new Map<string, ImageSourcePropType>();
 const inflight = new Map<string, Promise<ImageSourcePropType>>();
@@ -27,27 +30,25 @@ function iconPt(width = Dimensions.get('window').width) {
   return tabIconPointSize(width);
 }
 
-function iconScale() {
-  return Math.max(2, Math.round(PixelRatio.get()));
-}
-
 function iconCanvasPx(width?: number) {
-  return Math.round(iconPt(width) * iconScale());
+  // NativeTabs + RCTResizeModeCenter keep the bitmap's point size. Other tab
+  // glyphs are 31px (and @3x), so You-tab photos must match that, not 427px.
+  return iconPt(width);
 }
 
-function tabImageSource(uri: string, width?: number): ImageSourcePropType {
+function tabImageSource(uri: string, width?: number, scale = 1): ImageSourcePropType {
   const pt = iconPt(width);
-  return { uri, width: pt, height: pt, scale: iconScale() };
+  return { uri, width: pt, height: pt, scale };
 }
 
 function sizedAsset(asset: number, width?: number): ImageSourcePropType {
   const resolved = Image.resolveAssetSource(asset);
   if (!resolved?.uri) return asset;
-  return tabImageSource(resolved.uri, width);
+  return tabImageSource(resolved.uri, width, resolved.scale || 1);
 }
 
 function placeholderTabIcon(width?: number): ImageSourcePropType {
-  return sizedAsset(DEFAULT_AVATAR, width);
+  return sizedAsset(YOU_TAB_ASSET, width);
 }
 
 function isPlaceholderAvatar(uri?: string) {
@@ -74,7 +75,7 @@ function hashKey(key: string) {
 }
 
 function cachedTabFile(key: string, width?: number, stamp = '0') {
-  return new File(Paths.document, `you-tab-${hashKey(key)}-${iconCanvasPx(width)}-v6-${stamp}.png`);
+  return new File(Paths.document, `you-tab-${hashKey(key)}-${iconCanvasPx(width)}-v7-${stamp}.png`);
 }
 
 function metaFile() {
@@ -123,6 +124,11 @@ function matchedTabIcon(key: string, width?: number): ImageSourcePropType | unde
   try {
     const meta = readTabIconMeta(width);
     if (meta?.key !== key) return undefined;
+    if (meta.uri.startsWith('data:image/png')) {
+      const source = tabImageSource(meta.uri, width);
+      prepared.set(slot, source);
+      return source;
+    }
     const png = new File(meta.uri);
     if (!png.exists || png.size < 128) return undefined;
     const source = tabImageSource(meta.uri, width);
@@ -331,20 +337,13 @@ async function rasterizeProfileTabIcon(avatar: string | undefined, key: string, 
   if (!bytes?.byteLength) throw new Error('Photo bytes');
   const circled = makeCircularImage(new Uint8Array(bytes), PHOTO_INSET, canvas);
   const iconUri = writeCircularTabPng(key, circled, width);
-
-  if (isPlaceholderAvatar(avatar)) {
-    try {
-      const file = metaFile();
-      if (file.exists) file.delete();
-    } catch {}
-  }
-
   const source = tabImageSource(iconUri, width);
   prepared.set(preparedKey(key, width), source);
   return source;
 }
 
 export async function prepareProfileTabIcon(avatar?: string, width?: number): Promise<ImageSourcePropType> {
+  if (isPlaceholderAvatar(avatar)) return placeholderTabIcon(width);
   const key = cacheKeyFor(avatar);
   const slot = preparedKey(key, width);
   const cached = matchedTabIcon(key, width);
@@ -375,13 +374,14 @@ export function useProfileTabIcon(avatar?: string, width?: number): ProfileTabIc
   });
 
   useEffect(() => {
+    if (placeholder) {
+      setIcon({ source: placeholderTabIcon(width), key: cacheKey });
+      return;
+    }
     const hit = matchedTabIcon(cacheKey, width);
     if (hit) {
       setIcon({ source: hit, key: cacheKey });
       return;
-    }
-    if (placeholder) {
-      setIcon({ source: placeholderTabIcon(width), key: cacheKey });
     }
 
     let cancelled = false;
