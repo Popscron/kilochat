@@ -69,6 +69,11 @@ const ICONS = {
   help: { ios: 'questionmark.circle', android: 'help' },
   invite: { ios: 'heart', android: 'favorite' },
   accountsCentre: { ios: 'infinity', android: 'all_inclusive' },
+  laptop: { ios: 'laptopcomputer', android: 'laptop' },
+  iphone: { ios: 'iphone', android: 'phone_iphone' },
+  desktop: { ios: 'desktopcomputer', android: 'desktop_windows' },
+  browser: { ios: 'globe', android: 'language' },
+  lockFill: { ios: 'lock.fill', android: 'lock' },
   // Chat list: selection, swipe actions and the chat actions sheet.
   selectCircle: { ios: 'checkmark.circle', android: 'check_circle' },
   readAll: { ios: 'checkmark.bubble', android: 'done_all' },

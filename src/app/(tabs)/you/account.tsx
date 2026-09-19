@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/context';
 import { GlassIconButton } from '@/components/glass-surface';
 import { Icon } from '@/components/icon';
+import { isOwnerAccount } from '@/constants/owner';
 import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
+import { getCurrentUser } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
 type Row = {
@@ -38,6 +40,14 @@ export default function AccountScreen() {
   const { signOut } = useAuth();
 
   const onRow = (key: string) => {
+    if (key === 'add-account') {
+      if (isOwnerAccount(getCurrentUser())) {
+        router.push('/admin');
+        return;
+      }
+      Alert.alert('Not available', 'This feature is not available.');
+      return;
+    }
     if (key !== 'log-out') return;
     Alert.alert('Log out?', 'You will need your phone number to log back in.', [
       { text: 'Cancel', style: 'cancel' },

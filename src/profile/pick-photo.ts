@@ -1,6 +1,9 @@
 import { File, Paths } from 'expo-file-system';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
+
+import { showDefaultAvatarPicker } from '@/profile/default-avatar-picker';
 
 async function persist(uri: string, prefix = 'avatar') {
   try {
@@ -17,6 +20,33 @@ async function persist(uri: string, prefix = 'avatar') {
 async function fromResult(result: ImagePicker.ImagePickerResult) {
   if (result.canceled || !result.assets[0]?.uri) return null;
   return persist(result.assets[0].uri);
+}
+
+export function isLocalPhotoUri(uri?: string) {
+  if (!uri) return false;
+  return (
+    uri.startsWith('file:') ||
+    uri.startsWith('ph:') ||
+    uri.startsWith('content:') ||
+    uri.startsWith('assets-library:') ||
+    uri.startsWith('/')
+  );
+}
+
+/** Compress a local photo so it can be stored on the server. */
+export async function encodeAvatarForServer(uri?: string): Promise<string> {
+  if (!uri) return '';
+  if (uri.startsWith('data:image/')) return uri;
+  if (/^https?:/i.test(uri) || /^asset:/.test(uri)) return uri;
+  if (!isLocalPhotoUri(uri)) return uri;
+
+  const result = await manipulateAsync(uri, [{ resize: { width: 512, height: 512 } }], {
+    compress: 0.72,
+    format: SaveFormat.JPEG,
+    base64: true,
+  });
+  if (!result.base64) throw new Error('Could not encode photo');
+  return `data:image/jpeg;base64,${result.base64}`;
 }
 
 export async function pickProfilePhoto(source: 'camera' | 'library'): Promise<string | null> {
@@ -112,4 +142,18 @@ export function showPhotoOptions(handlers: {
     })),
     { text: 'Cancel', style: 'cancel' as const },
   ]);
+}
+
+/** Camera, library, or the default person icon for a chat/contact photo. */
+export function chooseContactPhoto(onPick: (uri: string) => void, title = 'Contact photo') {
+  showPhotoOptions({
+    title,
+    onCamera: () => {
+      pickProfilePhoto('camera').then((uri) => uri && onPick(uri));
+    },
+    onLibrary: () => {
+      pickProfilePhoto('library').then((uri) => uri && onPick(uri));
+    },
+    onDefault: () => showDefaultAvatarPicker(onPick),
+  });
 }

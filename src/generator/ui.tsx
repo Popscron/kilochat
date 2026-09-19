@@ -174,8 +174,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerRight: {
-    width: Layout.headerIconButtonSize,
+    minWidth: 64,
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   card: {
     borderRadius: Radius.card,

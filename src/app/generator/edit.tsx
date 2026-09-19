@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
-import { DEFAULT_AVATAR_KEY, LOCAL_AVATARS, localAvatarKey } from '@/constants/avatars';
+import { LOCAL_AVATARS, localAvatarKey } from '@/constants/avatars';
 import { FontSize, Spacing } from '@/constants/theme';
 import { fieldsForCategory, setDraftTime } from '@/generator/engine';
 import { splitDateTime } from '@/generator/format';
@@ -23,7 +23,7 @@ import { getDraft, getGeneratorConfig, replaceDraft, updateDraft, useGenerator }
 import { CATEGORIES, CATEGORY_META } from '@/generator/types';
 import { Chip, GeneratorHeader, SectionCard, SectionLabel, Stepper } from '@/generator/ui';
 import { useTheme } from '@/hooks/use-theme';
-import { pickProfilePhoto, showPhotoOptions } from '@/profile/pick-photo';
+import { chooseContactPhoto } from '@/profile/pick-photo';
 
 function dayLabel(daysAgo: number) {
   if (daysAgo === 0) return 'Today';
@@ -54,15 +54,7 @@ export default function GeneratorEditScreen() {
   const clock = hour12(hour);
 
   const changePhoto = () => {
-    showPhotoOptions({
-      title: 'Contact photo',
-      onLibrary: () => {
-        pickProfilePhoto('library').then((uri) => {
-          if (uri) updateDraft(draft.id, { avatar: uri });
-        });
-      },
-      onDefault: () => updateDraft(draft.id, { avatar: DEFAULT_AVATAR_KEY }),
-    });
+    chooseContactPhoto((avatar) => updateDraft(draft.id, { avatar }), 'Contact photo');
   };
 
   return (
@@ -75,7 +67,11 @@ export default function GeneratorEditScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: Spacing.five, paddingBottom: insets.bottom + Spacing.eight }}>
           <Pressable onPress={changePhoto} style={styles.avatarBlock} accessibilityLabel="Change photo">
-            <Avatar uri={draft.avatar} size={88} />
+            <Avatar
+              uri={draft.avatar}
+              size={88}
+              statusRing={draft.statusRing === 'none' ? undefined : draft.statusRing}
+            />
             <Text style={[styles.changePhoto, { color: theme.link }]}>Change photo</Text>
           </Pressable>
 
@@ -153,6 +149,7 @@ export default function GeneratorEditScreen() {
                 onPress={() =>
                   updateDraft(draft.id, {
                     category,
+                    statusRing: category === 'statusRing' ? 'unviewed' : draft.statusRing,
                     ...fieldsForCategory(category, getGeneratorConfig().style, draft.avatarSeed),
                   })
                 }
@@ -203,6 +200,29 @@ export default function GeneratorEditScreen() {
                 onValueChange={(unread) => updateDraft(draft.id, { unread })}
                 trackColor={{ true: theme.accentBright }}
               />
+            </View>
+            <View style={[styles.rule, { backgroundColor: theme.separator }]} />
+            <View style={styles.switchCopyPad}>
+              <Text style={[styles.switchLabel, { color: theme.text }]}>Status ring</Text>
+              <Text style={[styles.switchHint, { color: theme.textSecondary }]}>
+                Green is unviewed, grey is viewed, none hides the ring.
+              </Text>
+            </View>
+            <View style={styles.statusChips}>
+              {(
+                [
+                  ['none', 'None'],
+                  ['unviewed', 'Unviewed'],
+                  ['viewed', 'Viewed'],
+                ] as const
+              ).map(([value, label]) => (
+                <Chip
+                  key={value}
+                  label={label}
+                  selected={draft.statusRing === value}
+                  onPress={() => updateDraft(draft.id, { statusRing: value })}
+                />
+              ))}
             </View>
           </SectionCard>
         </ScrollView>
@@ -278,6 +298,19 @@ const styles = StyleSheet.create({
   switchCopy: {
     flex: 1,
     gap: 4,
+  },
+  switchCopyPad: {
+    gap: 4,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+  },
+  statusChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.three,
+    paddingTop: Spacing.two,
   },
   switchLabel: {
     fontSize: FontSize.body,

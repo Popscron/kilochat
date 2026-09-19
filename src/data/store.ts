@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react';
 
-import { writeInboxCache, type InboxPayload } from './inbox-cache';
+import { readInboxCacheSync, writeInboxCache, type InboxPayload } from './inbox-cache';
 import { currentUser as dummyUser } from './profile';
+import { type StoredStatusRing } from './statuses';
 import type { Chat, Contact, Message, Profile } from './types';
-import { DEFAULT_AVATAR_KEY, generatedAvatarUri } from '@/constants/avatars';
+import { DEFAULT_AVATAR_KEY, generatedAvatarUri, isPlaceholderAvatar } from '@/constants/avatars';
 
 export type StoreMessage = Message;
 
@@ -60,8 +61,14 @@ function isLocalPhoto(uri?: string) {
 
 function isKeptAvatar(uri?: string) {
   if (!uri) return false;
-  if (uri === DEFAULT_AVATAR_KEY || uri === 'asset:default') return false;
-  return isLocalPhoto(uri) || /^asset:\d+$/.test(uri);
+  if (uri === DEFAULT_AVATAR_KEY || uri === 'asset:default') return true;
+  return (
+    isLocalPhoto(uri) ||
+    /^asset:\d+$/.test(uri) ||
+    isPlaceholderAvatar(uri) ||
+    uri.startsWith('data:image/') ||
+    /^https?:/i.test(uri)
+  );
 }
 
 function localAvatarFor(id: string, uri?: string) {
@@ -71,10 +78,32 @@ function localAvatarFor(id: string, uri?: string) {
 
 /** Keep a locally picked photo; never invent a random contact-style avatar for me. */
 function resolveMeAvatar(incoming?: string) {
-  if (isLocalPhoto(incoming)) return incoming;
-  if (isLocalPhoto(snapshot.currentUser.avatar)) return snapshot.currentUser.avatar;
+  const current = snapshot.currentUser.avatar;
+  if (incoming?.startsWith('data:image/') || /^https?:/i.test(incoming || '')) return incoming!;
+  if (isLocalPhoto(current) || current?.startsWith('data:image/')) return current;
+  if (isKeptAvatar(incoming)) return incoming!;
+  if (isKeptAvatar(current)) return current;
   return DEFAULT_AVATAR_KEY;
 }
+
+function applyCachedInbox() {
+  const cached = readInboxCacheSync();
+  if (!cached?.me) return;
+  snapshot = {
+    ...snapshot,
+    currentUser: {
+      ...cached.me,
+      avatar: resolveMeAvatar(cached.me.avatar),
+    },
+    contacts: cached.contacts,
+    chats: cached.chats,
+    messages: cached.messages ?? [],
+    recentSearchContactIds: (cached.contacts ?? []).slice(0, 5).map((contact) => contact.id),
+    usingServer: true,
+  };
+}
+
+applyCachedInbox();
 
 function persistInbox() {
   const next = getSnapshot();
@@ -86,27 +115,66 @@ function persistInbox() {
   } satisfies InboxPayload);
 }
 
+function isDummyChatId(id?: string) {
+  return !!id && /^chat-\d+$/.test(id);
+}
+
+function isDummyContactId(id?: string) {
+  return !!id && /^c\d+$/.test(id);
+}
+
+function mergeById<T extends { id: string }>(preferred: T[], extra: T[]) {
+  const map = new Map<string, T>();
+  for (const item of extra) map.set(item.id, item);
+  for (const item of preferred) map.set(item.id, item);
+  return [...map.values()];
+}
+
 export function hydrateFromServer(payload: {
   me: Profile;
   contacts: Contact[];
   chats: Chat[];
   messages: Message[];
 }) {
+  const generatedContacts = snapshot.contacts.filter((item) => item.id.startsWith('gen-'));
+  const generatedChats = snapshot.chats.filter((item) => item.id.startsWith('gen-'));
+  const generatedChatIds = new Set(generatedChats.map((item) => item.id));
+  const generatedMessages = snapshot.messages.filter(
+    (item) => item.id.startsWith('gen-') || generatedChatIds.has(item.chatId)
+  );
+
+  const contacts = mergeById(
+    generatedContacts,
+    payload.contacts
+      .filter((contact) => !isDummyContactId(contact.id))
+      .map((contact) => ({
+        ...contact,
+        avatar: localAvatarFor(contact.id, contact.avatar),
+      }))
+  );
+  const chats = mergeById(
+    generatedChats,
+    payload.chats
+      .filter((chat) => !isDummyChatId(chat.id))
+      .map((chat) => ({
+        ...chat,
+        avatar: chat.avatar ? localAvatarFor(chat.id, chat.avatar) : chat.avatar,
+      }))
+  );
+  const messages = mergeById(
+    generatedMessages,
+    payload.messages.filter((message) => !isDummyChatId(message.chatId))
+  );
+
   emit({
     currentUser: {
       ...payload.me,
       avatar: resolveMeAvatar(payload.me.avatar),
     },
-    contacts: payload.contacts.map((contact) => ({
-      ...contact,
-      avatar: localAvatarFor(contact.id, contact.avatar),
-    })),
-    chats: payload.chats.map((chat) => ({
-      ...chat,
-      avatar: chat.avatar ? localAvatarFor(chat.id, chat.avatar) : chat.avatar,
-    })),
-    messages: payload.messages,
-    recentSearchContactIds: payload.contacts.slice(0, 5).map((contact) => contact.id),
+    contacts,
+    chats,
+    messages,
+    recentSearchContactIds: contacts.slice(0, 5).map((contact) => contact.id),
     usingServer: true,
   });
   persistInbox();
@@ -162,6 +230,8 @@ export type GeneratedInboxChat = {
   category?: string;
   createdAt: string;
   unread: boolean;
+  hasStatusRing?: boolean;
+  statusRing?: StoredStatusRing;
 };
 
 /** Local demo chats only. Does not touch the server. */
@@ -183,6 +253,7 @@ export function applyGeneratedChats(items: GeneratedInboxChat[]) {
       avatar: item.avatar,
       about: 'Available',
       lastSeen: item.createdAt,
+      statusRing: item.statusRing ?? (item.hasStatusRing ? 'unviewed' : 'none'),
     });
     chats.unshift({
       id: chatId,
@@ -209,6 +280,7 @@ export function applyGeneratedChats(items: GeneratedInboxChat[]) {
   });
 
   emit({ contacts, chats, messages });
+  persistInbox();
 }
 
 /*
@@ -279,6 +351,40 @@ export function toggleChatMuted(id: string) {
 
 export function toggleChatFavourite(id: string) {
   updateChats([id], (chat) => ({ ...chat, favourite: !chat.favourite }));
+}
+
+/** Sets the avatar ring: green unviewed, grey viewed, or none. */
+export function setChatStatusRing(chatId: string, ring: StoredStatusRing) {
+  const chat = snapshot.chats.find((item) => item.id === chatId);
+  if (!chat || chat.type === 'group') return;
+  const contactId = chat.participantIds[0];
+  const contact = snapshot.contacts.find((item) => item.id === contactId);
+  if (!contact) return;
+  emit({
+    contacts: snapshot.contacts.map((item) =>
+      item.id === contactId ? { ...item, statusRing: ring } : item
+    ),
+  });
+  persistInbox();
+}
+
+/** Direct chats store the photo on the contact; groups store it on the chat. */
+export function updateChatAvatar(chatId: string, avatar: string) {
+  const chat = snapshot.chats.find((item) => item.id === chatId);
+  if (!chat) return;
+  if (chat.type === 'group') {
+    updateChats([chatId], (item) => (item.avatar === avatar ? item : { ...item, avatar }));
+    persistInbox();
+    return;
+  }
+  const contactId = chat.participantIds[0];
+  if (!contactId) return;
+  emit({
+    contacts: snapshot.contacts.map((item) =>
+      item.id === contactId ? { ...item, avatar } : item
+    ),
+  });
+  persistInbox();
 }
 
 export function clearChat(id: string) {

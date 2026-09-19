@@ -1,4 +1,4 @@
-export const CATEGORIES = ['payment', 'price', 'appreciation', 'general', 'photo', 'voice', 'status'] as const;
+export const CATEGORIES = ['payment', 'price', 'appreciation', 'general', 'photo', 'voice', 'status', 'statusRing'] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 export const STYLES = ['casual', 'friendly', 'professional', 'ghana', 'mixed'] as const;
@@ -15,6 +15,7 @@ export const CATEGORY_META: Record<Category, { label: string; emoji: string }> =
   photo: { label: 'Photo', emoji: '📷' },
   voice: { label: 'Voice message', emoji: '🎤' },
   status: { label: 'Status reply', emoji: '🟢' },
+  statusRing: { label: 'Status ring', emoji: '🟢' },
 };
 
 export const STYLE_LABELS: Record<MessageStyle, string> = {
@@ -55,6 +56,8 @@ export type DraftChat = {
   durationSec?: number;
   createdAt: string;
   unread: boolean;
+  /** none = no ring, unviewed = green, viewed = grey. */
+  statusRing: 'none' | 'unviewed' | 'viewed';
 };
 
 export const defaultCounts = (): CategoryCounts => ({
@@ -65,6 +68,7 @@ export const defaultCounts = (): CategoryCounts => ({
   photo: 0,
   voice: 0,
   status: 0,
+  statusRing: 0,
 });
 
 export const defaultConfig = (): GeneratorConfig => ({

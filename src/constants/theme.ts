@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 export const Colors = {
   light: {
     text: '#000000',
-    textSecondary: '#8A8A8E',
+    textSecondary: '#6e7070',
     textTertiary: '#AEAEB2',
     background: '#FFFFFF',
     backgroundElement: '#F2F2F7',
@@ -22,6 +22,7 @@ export const Colors = {
     readTick: '#53BDEB',
 
     chipBorder: '#DCDCDF',
+    chipText: '#6E7070',
     chipActiveBackground: '#D9FDD3',
     chipActiveBorder: '#B7E9B0',
     chipActiveText: '#15603E',
@@ -74,6 +75,7 @@ export const Colors = {
     readTick: '#53BDEB',
 
     chipBorder: '#3A3A3C',
+    chipText: '#6E7070',
     chipActiveBackground: '#103529',
     chipActiveBorder: '#1B5E43',
     chipActiveText: '#D9FDD3',

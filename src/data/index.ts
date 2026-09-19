@@ -2,12 +2,12 @@
  * Read-only selectors over the chat store. Screens talk to these functions so
  * dummy arrays and the live API share the same shape.
  */
-import { getStatusRing, type StatusRing } from './statuses';
+import { resolveStatusRing, type StatusRing } from './statuses';
 import { getSnapshot, isChatUnread } from './store';
 import type { Chat, Contact, Message, Profile } from './types';
 
 export * from './types';
-export { getStatusRing, type StatusRing } from './statuses';
+export { getStatusRing, type StatusRing, type StoredStatusRing } from './statuses';
 export { isChatUnread, useChatData } from './store';
 
 export function getCurrentUser(): Profile {
@@ -18,7 +18,7 @@ export function getCurrentUserId(): string {
   return getSnapshot().currentUser.id;
 }
 
-export type ChatFilter = 'all' | 'unread' | 'favourites' | 'groups';
+export type ChatFilter = 'all' | 'unread' | 'favourites' | 'groups' | 'communities';
 
 export type ChatPreview = {
   chat: Chat;
@@ -58,7 +58,9 @@ export function getChatAvatar(chat: Chat): string | undefined {
 
 /** Groups never show a status ring; direct chats follow the contact. */
 export function getChatStatusRing(chat: Chat): StatusRing | undefined {
-  return chat.type === 'group' ? undefined : getStatusRing(chat.participantIds[0]);
+  if (chat.type === 'group') return undefined;
+  const contactId = chat.participantIds[0];
+  return resolveStatusRing(getContact(contactId)?.statusRing, contactId);
 }
 
 export function getMessagesForChat(chatId: string): Message[] {
@@ -110,6 +112,8 @@ function matchesFilter(chat: Chat, filter: ChatFilter): boolean {
       return !!chat.favourite;
     case 'groups':
       return chat.type === 'group';
+    case 'communities':
+      return !!chat.community;
     default:
       return true;
   }

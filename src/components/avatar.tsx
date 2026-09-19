@@ -37,16 +37,17 @@ export function Avatar({ uri, size, isGroup, showTimerBadge, statusRing }: Avata
   const ringSize = visibleSize + (RING_WIDTH + RING_GAP) * 2;
   const radius = mediaSize / 2;
   const badgeSize = Math.round(size * 0.36);
+  const ringOffset = (size - ringSize) / 2;
   const source = avatarImageSource(uri);
 
   const media = source ? (
     <Image
-      key={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
+      key={uri ?? DEFAULT_AVATAR_KEY}
       source={source}
       style={{ width: mediaSize, height: mediaSize, borderRadius: radius, overflow: 'hidden' }}
       contentFit="cover"
       transition={0}
-      recyclingKey={isDefaultAvatar(uri) ? DEFAULT_AVATAR_KEY : uri}
+      recyclingKey={uri ?? DEFAULT_AVATAR_KEY}
     />
   ) : (
     <View
@@ -69,23 +70,23 @@ export function Avatar({ uri, size, isGroup, showTimerBadge, statusRing }: Avata
 
   return (
     <View style={[styles.frame, { width: size, height: size }]}>
-      {/* The ring wraps the avatar so both share one centre. */}
+      {media}
       {statusRing ? (
         <View
+          pointerEvents="none"
           style={[
             styles.ring,
             {
               width: ringSize,
               height: ringSize,
               borderRadius: ringSize / 2,
+              top: ringOffset,
+              left: ringOffset,
               borderColor: statusRing === 'unviewed' ? theme.statusRing : theme.statusRingViewed,
             },
-          ]}>
-          {media}
-        </View>
-      ) : (
-        media
-      )}
+          ]}
+        />
+      ) : null}
 
       {showTimerBadge && (
         <View
@@ -115,9 +116,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ring: {
+    position: 'absolute',
     borderWidth: RING_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   badge: {
     position: 'absolute',

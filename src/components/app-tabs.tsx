@@ -1,8 +1,10 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { Image, type ImageSourcePropType } from 'react-native';
+import { useMemo } from 'react';
+import { Image, useWindowDimensions, type ImageSourcePropType } from 'react-native';
 
 import { iconSymbols, type IconName } from '@/components/icon';
 import { useTabBarVisibility } from '@/components/tab-bar-visibility';
+import { tabLabelFontSize, tabPngIconPointSize } from '@/components/tab-metrics';
 import { getCurrentUser, getTotalUnreadCount, useChatData } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 import { useProfileTabIcon } from '@/profile/tab-avatar';
@@ -12,22 +14,22 @@ const CHATS_TAB_ASSET = require('../../assets/icons/chats-tab.png');
 const CHATS_TAB_SELECTED_ASSET = require('../../assets/icons/chats-tab-selected.png');
 const COMMUNITIES_TAB_ASSET = require('../../assets/icons/communities-tab.png');
 
-/** Keep PNG tab icons at SF Symbol size so iOS 26 does not fill the selected pill. */
-function nativeTabImage(asset: number, pt = 25): ImageSourcePropType {
+/**
+ * You-tab photos are data-URI PNGs so Expo Go on a real phone can display them.
+ * NativeTabs uses the bitmap's point size. These PNGs are shipped as @3x.
+ * Pass width/height in points and scale 3 so iOS 26 does not treat the raw
+ * pixel size as the tab icon size. Compact phones get a smaller point size.
+ */
+function nativeTabImage(asset: number, pt: number): ImageSourcePropType {
   const resolved = Image.resolveAssetSource(asset);
   if (!resolved?.uri) return asset;
   return {
     uri: resolved.uri,
     width: pt,
     height: pt,
-    scale: resolved.scale > 1 ? resolved.scale : 3,
+    scale: resolved.scale || 3,
   };
 }
-
-const STATUS_TAB_ICON = nativeTabImage(STATUS_TAB_ASSET);
-const CHATS_TAB_ICON = nativeTabImage(CHATS_TAB_ASSET, 31);
-const CHATS_TAB_SELECTED_ICON = nativeTabImage(CHATS_TAB_SELECTED_ASSET, 31);
-const COMMUNITIES_TAB_ICON = nativeTabImage(COMMUNITIES_TAB_ASSET, 31);
 
 type TabConfig = {
   /** Route file name inside `app/(tabs)`. */
@@ -56,16 +58,32 @@ const TABS: TabConfig[] = [
 
 export default function AppTabs() {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const { hidden } = useTabBarVisibility();
-  useChatData();
-  const profileTabIcon = useProfileTabIcon(getCurrentUser().avatar);
+  const data = useChatData();
+  const tabIcon = useProfileTabIcon(data.currentUser.avatar ?? getCurrentUser().avatar, width);
+  const iconPt = tabPngIconPointSize(width);
+  const labelSize = tabLabelFontSize(width);
+  const icons = useMemo(
+    () => ({
+      status: nativeTabImage(STATUS_TAB_ASSET, iconPt),
+      chats: nativeTabImage(CHATS_TAB_ASSET, iconPt),
+      chatsSelected: nativeTabImage(CHATS_TAB_SELECTED_ASSET, iconPt),
+      communities: nativeTabImage(COMMUNITIES_TAB_ASSET, iconPt),
+    }),
+    [iconPt]
+  );
 
   return (
     <NativeTabs
+      key={`you-${tabIcon.uri}`}
       hidden={hidden}
       tintColor={theme.text}
       iconColor={{ default: theme.text, selected: theme.text }}
-      labelStyle={{ default: { color: theme.text }, selected: { color: theme.text } }}
+      labelStyle={{
+        default: { color: theme.text, fontSize: labelSize },
+        selected: { color: theme.text, fontSize: labelSize },
+      }}
       backgroundColor={theme.background}
       indicatorColor={theme.chipActiveBackground}
       badgeBackgroundColor={theme.accentBright}
@@ -77,16 +95,16 @@ export default function AppTabs() {
           <NativeTabs.Trigger key={name} name={name}>
             <NativeTabs.Trigger.Label>{label}</NativeTabs.Trigger.Label>
             {icon === 'status' ? (
-              <NativeTabs.Trigger.Icon src={STATUS_TAB_ICON} renderingMode="template" />
+              <NativeTabs.Trigger.Icon src={icons.status} renderingMode="template" />
             ) : icon === 'chats' ? (
               <NativeTabs.Trigger.Icon
-                src={{ default: CHATS_TAB_ICON, selected: CHATS_TAB_SELECTED_ICON }}
+                src={{ default: icons.chats, selected: icons.chatsSelected }}
                 renderingMode="template"
               />
             ) : icon === 'communities' ? (
-              <NativeTabs.Trigger.Icon src={COMMUNITIES_TAB_ICON} renderingMode="template" />
+              <NativeTabs.Trigger.Icon src={icons.communities} renderingMode="template" />
             ) : icon === 'you' ? (
-              <NativeTabs.Trigger.Icon src={profileTabIcon} renderingMode="original" />
+              <NativeTabs.Trigger.Icon src={tabIcon.source} renderingMode="original" />
             ) : (
               <NativeTabs.Trigger.Icon sf={symbols.ios} md={symbols.android} />
             )}

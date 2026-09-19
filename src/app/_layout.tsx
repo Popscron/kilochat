@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '@/auth/context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
+import { DefaultAvatarPickerHost } from '@/profile/default-avatar-picker';
 
 function RootNavigator() {
   const scheme = useColorScheme();
@@ -56,6 +57,7 @@ function RootNavigator() {
         />
         <Stack.Screen name="generator" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="admin" />
       </Stack>
       {showSplash && <View pointerEvents="none" style={[styles.splash, { backgroundColor: theme.background }]} />}
     </ThemeProvider>
@@ -67,6 +69,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <AuthProvider>
         <RootNavigator />
+        <DefaultAvatarPickerHost />
       </AuthProvider>
     </GestureHandlerRootView>
   );

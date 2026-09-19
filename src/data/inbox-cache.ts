@@ -15,13 +15,27 @@ function cacheFile() {
   return new File(Paths.document, FILE_NAME);
 }
 
+function parseInbox(raw: string): InboxPayload | null {
+  const parsed = JSON.parse(raw) as InboxPayload;
+  if (!parsed?.me || !Array.isArray(parsed.chats) || !Array.isArray(parsed.contacts)) return null;
+  return parsed;
+}
+
+export function readInboxCacheSync(): InboxPayload | null {
+  try {
+    const file = cacheFile();
+    if (!file.exists) return null;
+    return parseInbox(file.textSync());
+  } catch {
+    return null;
+  }
+}
+
 export async function readInboxCache(): Promise<InboxPayload | null> {
   try {
     const file = cacheFile();
     if (!file.exists) return null;
-    const parsed = JSON.parse(await file.text()) as InboxPayload;
-    if (!parsed?.me || !Array.isArray(parsed.chats) || !Array.isArray(parsed.contacts)) return null;
-    return parsed;
+    return parseInbox(await file.text());
   } catch {
     return null;
   }

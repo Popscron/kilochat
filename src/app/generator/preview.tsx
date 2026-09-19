@@ -6,11 +6,14 @@ import { Avatar } from '@/components/avatar';
 import { Icon } from '@/components/icon';
 import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
 import { applyGeneratedChats } from '@/data/store';
+import { useChatData } from '@/data';
+import { spendGeneratePoint } from '@/generator/credits';
 import { formatPreviewWhen } from '@/generator/format';
-import { clearDrafts, deleteDraft, generatePreview, regenerateOne, useGenerator } from '@/generator/store';
+import { clearDrafts, deleteDraft, generatePreview, regenerateOne, updateDraft, useGenerator } from '@/generator/store';
 import { CATEGORY_META, type DraftChat } from '@/generator/types';
 import { GeneratorHeader, PrimaryButton } from '@/generator/ui';
 import { useTheme } from '@/hooks/use-theme';
+import { chooseContactPhoto } from '@/profile/pick-photo';
 import { formatDuration } from '@/utils/format';
 
 export default function GeneratorPreviewScreen() {
@@ -18,6 +21,8 @@ export default function GeneratorPreviewScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { drafts } = useGenerator();
+  const { currentUser } = useChatData();
+  const remaining = currentUser.points ?? 0;
 
   const apply = () => {
     if (!drafts.length) return;
@@ -40,6 +45,8 @@ export default function GeneratorPreviewScreen() {
                 category: draft.category,
                 createdAt: draft.createdAt,
                 unread: draft.unread,
+                hasStatusRing: draft.statusRing !== 'none',
+                statusRing: draft.statusRing,
               }))
             );
             clearDrafts();
@@ -52,7 +59,15 @@ export default function GeneratorPreviewScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.groupedBackground }]}>
-      <GeneratorHeader title="Preview" onBack={() => router.back()} />
+      <GeneratorHeader
+        title="Preview"
+        onBack={() => router.back()}
+        right={
+          <Text style={{ color: theme.textSecondary, fontSize: 15, fontWeight: '600' }}>
+            {`${remaining} pts`}
+          </Text>
+        }
+      />
       <ScrollView
         contentContainerStyle={{ paddingTop: Spacing.four, paddingBottom: insets.bottom + 88 }}>
         <Text style={[styles.lead, { color: theme.textSecondary }]}>
@@ -81,7 +96,19 @@ export default function GeneratorPreviewScreen() {
         )}
 
         {drafts.length > 0 && (
-          <Pressable onPress={() => generatePreview()} style={styles.again}>
+          <Pressable
+            onPress={() => {
+              if (remaining < 1) {
+                Alert.alert('Cannot generate', 'No points remaining.');
+                return;
+              }
+              void spendGeneratePoint()
+                .then(() => generatePreview())
+                .catch((err: Error) => {
+                  Alert.alert('Cannot generate', err.message || 'No points remaining.');
+                });
+            }}
+            style={styles.again}>
             <Text style={[styles.againLabel, { color: theme.link }]}>Regenerate all</Text>
           </Pressable>
         )}
@@ -123,7 +150,18 @@ function DraftCard({
   return (
     <View style={[styles.card, { backgroundColor: theme.groupedCard }]}>
       <View style={styles.cardTop}>
-        <Avatar uri={draft.avatar} size={48} />
+        <Pressable
+          onPress={() =>
+            chooseContactPhoto((avatar) => updateDraft(draft.id, { avatar }), `Photo for ${draft.name}`)
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`Change photo for ${draft.name}`}>
+          <Avatar
+            uri={draft.avatar}
+            size={48}
+            statusRing={draft.statusRing === 'none' ? undefined : draft.statusRing}
+          />
+        </Pressable>
         <View style={styles.cardCopy}>
           <View style={styles.nameRow}>
             <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>

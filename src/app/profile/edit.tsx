@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,7 +21,8 @@ import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
 import { DEFAULT_AVATAR_KEY } from '@/constants/avatars';
 import { getSnapshot, updateCurrentUser, useChatData } from '@/data/store';
 import { useTheme } from '@/hooks/use-theme';
-import { pickProfilePhoto, showPhotoOptions } from '@/profile/pick-photo';
+import { pickProfilePhoto, encodeAvatarForServer, isLocalPhotoUri, showPhotoOptions } from '@/profile/pick-photo';
+import { prepareProfileTabIcon } from '@/profile/tab-avatar';
 
 export default function EditProfileScreen() {
   const theme = useTheme();
@@ -40,6 +42,7 @@ export default function EditProfileScreen() {
     const next = uri || DEFAULT_AVATAR_KEY;
     setAvatar(next);
     updateCurrentUser({ avatar: next });
+    void prepareProfileTabIcon(next);
   };
 
   const changePhoto = () => {
@@ -57,20 +60,22 @@ export default function EditProfileScreen() {
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
-    const patch = { name: trimmed, avatar };
-    updateCurrentUser(patch);
     try {
+      let stored = avatar || DEFAULT_AVATAR_KEY;
+      if (isLocalPhotoUri(stored)) {
+        stored = await encodeAvatarForServer(stored);
+      }
+      updateCurrentUser({ name: trimmed, avatar: stored });
+      await prepareProfileTabIcon(stored);
       if (getSnapshot().usingServer) {
-        const remote: { name: string; avatar?: string } = { name: trimmed };
-        if (!avatar) remote.avatar = '';
-        else if (!avatar.startsWith('file:') && !avatar.startsWith('ph:') && !avatar.startsWith('content:')) {
-          remote.avatar = avatar;
-        }
-        await updateMe(remote);
+        await updateMe({
+          name: trimmed,
+          avatar: stored === DEFAULT_AVATAR_KEY ? '' : stored,
+        });
       }
       router.back();
-    } catch {
-      router.back();
+    } catch (err) {
+      Alert.alert('Could not save photo', err instanceof Error ? err.message : 'Try again.');
     } finally {
       setSaving(false);
     }

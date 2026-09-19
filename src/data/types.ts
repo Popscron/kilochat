@@ -1,7 +1,4 @@
-/**
- * Shapes shared by the dummy data and the UI. They are intentionally close to
- * what a messaging API would return so the static arrays can be swapped out.
- */
+import type { StatusRing } from './statuses';
 
 export const CURRENT_USER_ID = 'me';
 
@@ -13,11 +10,16 @@ export type Contact = {
   about?: string;
   isOnline?: boolean;
   lastSeen?: string; // ISO date
+  /** Explicit ring. `none` hides it; omit to keep the dummy hash. */
+  statusRing?: StatusRing | 'none';
 };
 
 /** The signed-in user. `note` is the short status bubble shown above the avatar. */
 export type Profile = Omit<Contact, 'isOnline' | 'lastSeen'> & {
   note?: string;
+  points?: number;
+  status?: 'active' | 'suspended';
+  isOwner?: boolean;
 };
 
 export type ChatType = 'direct' | 'group';
@@ -41,6 +43,8 @@ export type Chat = {
   clearedAt?: string; // ISO date
   disappearingMessages?: boolean;
   pinnedMessage?: string;
+  /** WhatsApp Community chat; shown by the Communities filter. */
+  community?: boolean;
 };
 
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';

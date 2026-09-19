@@ -58,7 +58,7 @@ export function timestampForIndex(index: number, total: number, config: Generato
 function expandCategories(config: GeneratorConfig): Category[] {
   const list: Category[] = [];
   for (const category of CATEGORIES) {
-    for (let i = 0; i < config.counts[category]; i += 1) list.push(category);
+    for (let i = 0; i < (config.counts[category] ?? 0); i += 1) list.push(category);
   }
   for (let i = list.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -143,6 +143,7 @@ export function generateDrafts(
         category,
         createdAt,
         unread: true,
+        statusRing: category === 'statusRing' ? 'unviewed' : 'none',
         ...fields,
       };
     })

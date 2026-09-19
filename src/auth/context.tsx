@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { setOnUnauthorized } from '@/api/client';
 import { restoreSession, signInWithPhone as authenticatePhone, signOut as clearSession } from '@/api/session';
 
 type AuthContextValue = {
@@ -16,6 +17,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    setOnUnauthorized(() => {
+      void clearSession().then(() => setSignedIn(false));
+    });
     restoreSession(() => {
       setSignedIn(true);
       setReady(true);

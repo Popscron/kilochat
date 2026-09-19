@@ -7,8 +7,14 @@ import { GlassIconButton } from '@/components/glass-surface';
 import type { IconName } from '@/components/icon';
 import { SettingsSection, type SettingsItem } from '@/components/profile/settings-section';
 import { FontSize, Spacing } from '@/constants/theme';
-import { getChat, getChatAvatar, getChatTitle, useChatData } from '@/data';
-import { clearChat, deleteChats, toggleChatFavourite, toggleChatMuted } from '@/data/store';
+import { getChat, getChatAvatar, getChatStatusRing, getChatTitle, useChatData } from '@/data';
+import {
+  clearChat,
+  deleteChats,
+  setChatStatusRing,
+  toggleChatFavourite,
+  toggleChatMuted,
+} from '@/data/store';
 import { useTheme } from '@/hooks/use-theme';
 
 const AVATAR_SIZE = 42;
@@ -35,6 +41,8 @@ export default function ChatActionsSheet() {
   const title = getChatTitle(chat);
   const isGroup = chat.type === 'group';
 
+  const statusRing = getChatStatusRing(chat);
+
   const actions = [
     chat.muted ? action('mute', 'Unmute', 'unmute') : action('mute', 'Mute', 'mute'),
     action('info', isGroup ? 'Group info' : 'Contact info', 'info'),
@@ -43,6 +51,21 @@ export default function ChatActionsSheet() {
       ? action('favourite', 'Remove from Favourites', 'unfavourite')
       : action('favourite', 'Add to Favourites', 'invite'),
     action('list', 'Add to list', 'lists'),
+    ...(!isGroup
+      ? [
+          action(
+            'status-unviewed',
+            statusRing === 'unviewed' ? 'Unviewed status ✓' : 'Unviewed status',
+            'status'
+          ),
+          action(
+            'status-viewed',
+            statusRing === 'viewed' ? 'Viewed status ✓' : 'Viewed status',
+            'updates'
+          ),
+          action('status-none', !statusRing ? 'No status ✓' : 'No status', 'close'),
+        ]
+      : []),
     action('clear', 'Clear chat', 'clearChat'),
   ];
 
@@ -68,6 +91,15 @@ export default function ChatActionsSheet() {
         return dismiss();
       case 'favourite':
         toggleChatFavourite(chat.id);
+        return dismiss();
+      case 'status-unviewed':
+        setChatStatusRing(chat.id, 'unviewed');
+        return dismiss();
+      case 'status-viewed':
+        setChatStatusRing(chat.id, 'viewed');
+        return dismiss();
+      case 'status-none':
+        setChatStatusRing(chat.id, 'none');
         return dismiss();
       case 'clear':
         return confirm('Clear this chat?', 'Clear chat', () => {
@@ -96,7 +128,12 @@ export default function ChatActionsSheet() {
         { backgroundColor: theme.groupedBackground, paddingBottom: insets.bottom + Spacing.two },
       ]}>
       <View style={styles.header}>
-        <Avatar uri={getChatAvatar(chat)} size={AVATAR_SIZE} isGroup={isGroup} />
+        <Avatar
+          uri={getChatAvatar(chat)}
+          size={AVATAR_SIZE}
+          isGroup={isGroup}
+          statusRing={getChatStatusRing(chat)}
+        />
         <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {title}
         </Text>

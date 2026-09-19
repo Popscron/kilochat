@@ -1,7 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 
 import { API_URL } from './config';
-import { getToken } from './client';
+import { emitUnauthorized, getSessionId, getToken } from './client';
 import { addMessage, type StoreMessage } from '@/data/store';
 
 let socket: Socket | null = null;
@@ -18,6 +18,10 @@ export function connectSocket() {
 
   socket.on('message:new', (message: StoreMessage) => {
     addMessage(message);
+  });
+
+  socket.on('session:revoked', (payload: { sessionId?: string }) => {
+    if (payload?.sessionId && payload.sessionId === getSessionId()) emitUnauthorized();
   });
 }
 

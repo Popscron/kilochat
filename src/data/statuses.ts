@@ -6,6 +6,7 @@
  */
 
 export type StatusRing = 'unviewed' | 'viewed';
+export type StoredStatusRing = StatusRing | 'none';
 
 /** Contacts are spread over this many buckets; the first two get a ring. */
 const BUCKETS = 4;
@@ -25,4 +26,14 @@ export function getStatusRing(contactId?: string): StatusRing | undefined {
   if (bucket === 0) return 'unviewed';
   if (bucket === 1) return 'viewed';
   return undefined;
+}
+
+/** Honour a stored override (`none` / unviewed / viewed), else the dummy hash. */
+export function resolveStatusRing(
+  stored: StoredStatusRing | undefined,
+  contactId?: string
+): StatusRing | undefined {
+  if (stored === 'none') return undefined;
+  if (stored === 'unviewed' || stored === 'viewed') return stored;
+  return getStatusRing(contactId);
 }

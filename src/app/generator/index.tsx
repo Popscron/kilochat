@@ -1,10 +1,12 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icon';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
+import { useChatData } from '@/data';
+import { spendGeneratePoint } from '@/generator/credits';
 import {
   CATEGORIES,
   CATEGORY_META,
@@ -47,9 +49,11 @@ export default function GeneratorConfigureScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { config, profileImages } = useGenerator();
+  const { currentUser } = useChatData();
+  const remaining = currentUser.points ?? 0;
   const total = totalChats(config.counts);
   const photosNeeded = Math.max(0, total - profileImages.length);
-  const canGenerate = total > 0 && profileImages.length >= total;
+  const canGenerate = total > 0 && profileImages.length >= total && remaining > 0;
 
   const addPhotos = async () => {
     const remaining = MAX_TOTAL_CHATS - profileImages.length;
@@ -60,13 +64,27 @@ export default function GeneratorConfigureScreen() {
 
   const onGenerate = () => {
     if (!canGenerate) return;
-    generatePreview();
-    router.push('/generator/preview');
+    void spendGeneratePoint()
+      .then(() => {
+        generatePreview();
+        router.push('/generator/preview');
+      })
+      .catch((err: Error) => {
+        Alert.alert('Cannot generate', err.message || 'No points remaining.');
+      });
   };
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.groupedBackground }]}>
-      <GeneratorHeader title="Chat Generator" onBack={() => router.back()} />
+      <GeneratorHeader
+        title="Chat Generator"
+        onBack={() => router.back()}
+        right={
+          <Text style={{ color: theme.textSecondary, fontSize: 15, fontWeight: '600' }}>
+            {`${remaining} pts`}
+          </Text>
+        }
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingTop: Spacing.five, paddingBottom: insets.bottom + Spacing.eight }}>
@@ -187,7 +205,9 @@ export default function GeneratorConfigureScreen() {
               ? 'Add at least one chat'
               : photosNeeded
                 ? `Upload ${photosNeeded} more photo${photosNeeded === 1 ? '' : 's'}`
-                : `Generate preview · ${total}`
+                : remaining < 1
+                  ? 'No points remaining'
+                  : `Generate preview · ${total}`
           }
           onPress={onGenerate}
           disabled={!canGenerate}

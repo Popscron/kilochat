@@ -5,7 +5,7 @@ import { Icon } from '@/components/icon';
 import { FontSize, HitSlop, Layout, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export const SEARCH_PLACEHOLDER = 'Search';
+export const SEARCH_PLACEHOLDER = 'Ask Meta AI or Search ';
 
 type SearchFieldButtonProps = {
   onPress: () => void;

@@ -62,15 +62,12 @@ export function setGeneratorConfig(next: Partial<GeneratorConfig>) {
 
 export function setCategoryCount(key: keyof GeneratorConfig['counts'], value: number) {
   const next = Math.max(0, Math.min(MAX_PER_CATEGORY, Math.round(value)));
-  const others = totalChats(config.counts) - config.counts[key];
+  const others = totalChats(config.counts) - (config.counts[key] ?? 0);
   const capped = Math.min(next, Math.max(0, MAX_TOTAL_CHATS - others));
   config = {
     ...config,
     counts: {
       ...config.counts,
-                    photo: config.counts.photo ?? 0,
-      voice: config.counts.voice ?? 0,
-      status: config.counts.status ?? 0,
       [key]: capped,
     },
   };

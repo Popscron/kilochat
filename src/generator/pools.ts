@@ -40,7 +40,7 @@ export const NAMES = [
   'Blessing',
 ];
 
-const POOLS: Record<Category, Record<Exclude<MessageStyle, 'mixed'>, string[]>> = {
+const POOLS: Record<Exclude<Category, 'statusRing'>, Record<Exclude<MessageStyle, 'mixed'>, string[]>> = {
   payment: {
     casual: [
       'Bro, how much should I send?',
@@ -278,12 +278,13 @@ const POOLS: Record<Category, Record<Exclude<MessageStyle, 'mixed'>, string[]>> 
 };
 
 export function messagesFor(category: Category, style: MessageStyle): string[] {
+  const poolKey = category === 'statusRing' ? 'general' : category;
   if (style === 'mixed') {
     return (['casual', 'friendly', 'professional', 'ghana'] as const).flatMap(
-      (key) => POOLS[category][key]
+      (key) => POOLS[poolKey][key]
     );
   }
-  return POOLS[category][style];
+  return POOLS[poolKey][style];
 }
 
 export function avatarUri(seed: string | number): string {

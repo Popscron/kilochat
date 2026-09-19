@@ -13,6 +13,7 @@ import {
   markChatUnread,
   MAX_PINNED_CHATS,
   setChatsArchived,
+  setChatStatusRing,
   toggleChatFavourite,
   toggleChatMuted,
   toggleChatPinned,
@@ -141,6 +142,25 @@ export const SwipeableChatListItem = memo(function SwipeableChatListItem({
               {chat.favourite ? 'Remove from Favourites' : 'Add to Favourites'}
             </Link.MenuAction>
             <Link.MenuAction icon="person.crop.rectangle.stack">Add to list</Link.MenuAction>
+            {!isGroup ? (
+              <Link.Menu title="View status" icon="circle.dashed.inset.filled">
+                <Link.MenuAction
+                  icon="circle.dashed.inset.filled"
+                  onPress={() => setChatStatusRing(chat.id, 'unviewed')}>
+                  Unviewed
+                </Link.MenuAction>
+                <Link.MenuAction
+                  icon="circle"
+                  onPress={() => setChatStatusRing(chat.id, 'viewed')}>
+                  Viewed
+                </Link.MenuAction>
+                <Link.MenuAction
+                  icon="circle.slash"
+                  onPress={() => setChatStatusRing(chat.id, 'none')}>
+                  None
+                </Link.MenuAction>
+              </Link.Menu>
+            ) : null}
             {isGroup ? (
               <Link.MenuAction
                 icon="rectangle.portrait.and.arrow.right"

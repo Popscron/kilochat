@@ -8,7 +8,9 @@ import { HighlightedText } from '@/components/highlighted-text';
 import { Icon } from '@/components/icon';
 import { FontSize, Layout, Radius, Spacing } from '@/constants/theme';
 import { isChatUnread, type ChatPreview } from '@/data';
+import { updateChatAvatar } from '@/data/store';
 import { useTheme } from '@/hooks/use-theme';
+import { chooseContactPhoto } from '@/profile/pick-photo';
 import { formatChatListDate } from '@/utils/format';
 
 type ChatListItemProps = {
@@ -64,13 +66,24 @@ export const ChatListItem = memo(function ChatListItem({
           </View>
         </Animated.View>
       )}
-      <Avatar
-        uri={avatar}
-        size={Layout.chatAvatarSize}
-        isGroup={chat.type === 'group'}
-        showTimerBadge={chat.disappearingMessages}
-        statusRing={statusRing}
-      />
+      <Pressable
+        onPress={() => {
+          if (selecting) {
+            onPress(chat.id);
+            return;
+          }
+          chooseContactPhoto((next) => updateChatAvatar(chat.id, next), `Photo for ${title}`);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Change photo for ${title}`}>
+        <Avatar
+          uri={avatar}
+          size={Layout.chatAvatarSize}
+          isGroup={chat.type === 'group'}
+          showTimerBadge={chat.disappearingMessages}
+          statusRing={statusRing}
+        />
+      </Pressable>
 
       <View style={[styles.content, { borderBottomColor: theme.separator }]}>
         <View style={styles.titleRow}>

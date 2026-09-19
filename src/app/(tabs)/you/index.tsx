@@ -74,6 +74,10 @@ export default function YouScreen() {
         router.push('/you/account');
         return;
       }
+      if (key === 'linked-devices') {
+        router.push('/you/linked-devices');
+        return;
+      }
       if (key === 'appearance') {
         setThemePreference(resolvedColorScheme() === 'light' ? 'dark' : 'light');
       }
