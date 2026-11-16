@@ -4,11 +4,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { GlassSurface } from '@/components/glass-surface';
 import { Icon } from '@/components/icon';
+import { PINNED_ROW_HEIGHT, PinnedBanner } from '@/components/chat/pinned-banner';
 import { FontSize, HitSlop, Layout, Radius, Spacing } from '@/constants/theme';
 import type { StatusRing } from '@/data';
 import { useTheme } from '@/hooks/use-theme';
 
-export const CHAT_HEADER_HEIGHT = Layout.headerIconButtonSize + Spacing.three;
+const ROW_TOP = Spacing.one;
+const ROW_BOTTOM = Spacing.three;
+
+/** Height the floating header covers, so the message list can start below it. */
+export function chatHeaderSpace(topInset: number, hasPinned: boolean) {
+  return topInset + ROW_TOP + Layout.headerIconButtonSize + (hasPinned ? PINNED_ROW_HEIGHT : ROW_BOTTOM);
+}
 
 type ChatHeaderProps = {
   title: string;
@@ -22,7 +29,8 @@ type ChatHeaderProps = {
   onProfilePress?: () => void;
   onVideoCall?: () => void;
   onVoiceCall?: () => void;
-  children?: React.ReactNode;
+  /** Shown under the pills; the header then gets a solid band like WhatsApp. */
+  pinnedMessage?: string;
 };
 
 /** Floating glass header over the wallpaper, like WhatsApp on iOS 26. */
@@ -38,7 +46,7 @@ export function ChatHeader({
   onProfilePress,
   onVideoCall,
   onVoiceCall,
-  children,
+  pinnedMessage,
 }: ChatHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -48,10 +56,13 @@ export function ChatHeader({
     <View
       style={[
         styles.container,
-        {
-          paddingTop: insets.top + Spacing.one,
-          experimental_backgroundImage: `linear-gradient(to bottom, ${theme.wallpaper} 55%, transparent)`,
-        },
+        { paddingTop: insets.top + ROW_TOP },
+        pinnedMessage
+          ? { backgroundColor: theme.headerBand }
+          : {
+              paddingBottom: ROW_BOTTOM,
+              experimental_backgroundImage: `linear-gradient(to bottom, ${theme.wallpaper} 55%, transparent)`,
+            },
       ]}>
       <View style={styles.row}>
         <Pressable onPress={onBack} hitSlop={HitSlop} accessibilityRole="button" accessibilityLabel="Back">
@@ -98,7 +109,7 @@ export function ChatHeader({
           </Pressable>
         </GlassSurface>
       </View>
-      {children}
+      {!!pinnedMessage && <PinnedBanner text={pinnedMessage} />}
     </View>
   );
 }
@@ -109,7 +120,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    paddingBottom: Spacing.three,
     zIndex: 1,
   },
   row: {

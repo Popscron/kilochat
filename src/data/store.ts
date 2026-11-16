@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
+import { buildDemoChat, DEMO_CHAT_ID } from './demo-chat';
 import { readInboxCacheSync, writeInboxCache, type InboxPayload } from './inbox-cache';
 import { currentUser as dummyUser } from './profile';
 import { type StoredStatusRing } from './statuses';
@@ -105,6 +106,20 @@ function applyCachedInbox() {
 
 applyCachedInbox();
 
+/** Adds the dummy 1-to-1 chat (see demo-chat.ts) if it is not there yet. */
+function seedDemoChat() {
+  if (snapshot.chats.some((chat) => chat.id === DEMO_CHAT_ID)) return;
+  const demo = buildDemoChat();
+  snapshot = {
+    ...snapshot,
+    contacts: [demo.contact, ...snapshot.contacts.filter((c) => c.id !== demo.contact.id)],
+    chats: [demo.chat, ...snapshot.chats],
+    messages: [...snapshot.messages.filter((m) => m.chatId !== DEMO_CHAT_ID), ...demo.messages],
+  };
+}
+
+seedDemoChat();
+
 function persistInbox() {
   const next = getSnapshot();
   void writeInboxCache({
@@ -189,6 +204,7 @@ export function resetInbox() {
     recentSearchContactIds: [],
     usingServer: false,
   });
+  seedDemoChat();
 }
 
 export function addMessage(message: Message) {

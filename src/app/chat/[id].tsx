@@ -3,11 +3,10 @@ import { useEffect, useMemo } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CHAT_HEADER_HEIGHT, ChatHeader } from '@/components/chat/chat-header';
+import { ChatHeader, chatHeaderSpace } from '@/components/chat/chat-header';
 import { Composer } from '@/components/chat/composer';
 import { DateSeparator } from '@/components/chat/date-separator';
 import { MessageBubble } from '@/components/chat/message-bubble';
-import { PinnedBanner } from '@/components/chat/pinned-banner';
 import { sendMessage } from '@/api/client';
 import { FontSize, Spacing } from '@/constants/theme';
 import {
@@ -28,7 +27,6 @@ import { addMessage, markChatRead, replaceMessage } from '@/data/store';
 import { useTheme } from '@/hooks/use-theme';
 import { formatDaySeparator, formatLastSeen, isSameDay } from '@/utils/format';
 
-const PINNED_BANNER_SPACE = 48;
 const PREVIEW_HEADER_HEIGHT = 44;
 /** A hold-to-preview has no status bar or home indicator to avoid. */
 const NO_INSETS = { top: 0, bottom: 0, left: 0, right: 0 };
@@ -115,7 +113,7 @@ export default function ChatScreen() {
 
   const topSpace = isPreview
     ? PREVIEW_HEADER_HEIGHT + Spacing.two
-    : insets.top + CHAT_HEADER_HEIGHT + (chat.pinnedMessage ? PINNED_BANNER_SPACE : 0) + Spacing.two;
+    : chatHeaderSpace(insets.top, !!chat.pinnedMessage) + Spacing.two;
 
   const content = (
     <View style={[styles.flex, { backgroundColor: theme.wallpaper }]}>
@@ -138,9 +136,9 @@ export default function ChatScreen() {
           showTimerBadge={chat.disappearingMessages}
           statusRing={getChatStatusRing(chat)}
           backBadge={getTotalUnreadCount(chat.id)}
-          onBack={() => router.back()}>
-          {chat.pinnedMessage && <PinnedBanner text={chat.pinnedMessage} />}
-        </ChatHeader>
+          pinnedMessage={chat.pinnedMessage}
+          onBack={() => router.back()}
+        />
       )}
 
       <KeyboardAvoidingView style={styles.flex} behavior="padding">

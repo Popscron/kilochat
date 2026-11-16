@@ -4,7 +4,7 @@
  */
 import { resolveStatusRing, type StatusRing } from './statuses';
 import { getSnapshot, isChatUnread } from './store';
-import type { Chat, Contact, Message, Profile } from './types';
+import { CURRENT_USER_ID, type Chat, type Contact, type Message, type Profile } from './types';
 
 export * from './types';
 export { getStatusRing, type StatusRing, type StoredStatusRing } from './statuses';
@@ -144,7 +144,8 @@ export function getDirectChatForContact(contactId: string): Chat | undefined {
 }
 
 export function isFromMe(message: Message): boolean {
-  return message.senderId === getCurrentUserId();
+  // Demo messages use the local 'me' id, which differs from the server user id.
+  return message.senderId === getCurrentUserId() || message.senderId === CURRENT_USER_ID;
 }
 
 /** Case-insensitive search across chat titles and text messages. */

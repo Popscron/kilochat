@@ -44,6 +44,19 @@ function RootNavigator() {
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="community/[id]" />
+        <Stack.Screen name="community-chat/[id]" />
+        <Stack.Screen
+          name="new-community"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: 'fitToContents',
+            sheetGrabberVisible: false,
+            sheetCornerRadius: 34,
+            animation: 'default',
+            contentStyle: { backgroundColor: theme.background },
+          }}
+        />
         <Stack.Screen
           name="chat-actions/[id]"
           options={{

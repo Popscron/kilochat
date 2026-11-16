@@ -48,6 +48,12 @@ export const Colors = {
     checkboxBorder: '#C7C7CC',
 
     wallpaper: '#EFEAE2',
+    /** Chat header band when a message is pinned. */
+    headerBand: 'rgba(233, 233, 235, 0.97)',
+    /** Grey band at the top of a community's page. */
+    communityHeader: '#F2F2F2',
+    /** Light green card behind the new-community illustration. */
+    illustrationCard: '#E6FBD9',
     bubbleIncoming: '#FFFFFF',
     bubbleOutgoing: '#D9FDD3',
     bubbleMeta: '#667781',
@@ -100,6 +106,9 @@ export const Colors = {
     checkboxBorder: '#48484A',
 
     wallpaper: '#0B141A',
+    headerBand: 'rgba(28, 28, 30, 0.97)',
+    communityHeader: '#1C1C1E',
+    illustrationCard: '#103529',
     bubbleIncoming: '#1F2C33',
     bubbleOutgoing: '#144D37',
     bubbleMeta: '#8696A0',

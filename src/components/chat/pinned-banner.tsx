@@ -1,37 +1,52 @@
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GlassSurface } from '@/components/glass-surface';
 import { Icon } from '@/components/icon';
 import { FontSize, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export function PinnedBanner({ text }: { text: string }) {
+const PIN_TILE_SIZE = 40;
+export const PINNED_ROW_HEIGHT = PIN_TILE_SIZE + Spacing.three * 2;
+
+/** Pinned message row inside the chat header band: pin tile + one line of text. */
+export function PinnedBanner({ text, onPress }: { text: string; onPress?: () => void }) {
   const theme = useTheme();
 
   return (
-    <GlassSurface style={styles.banner}>
-      <Icon name="pin" size={16} color={theme.textSecondary} />
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Pinned message: ${text}`}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <View style={[styles.tile, { backgroundColor: theme.searchField }]}>
+        <Icon name="pin" size={18} color={theme.textSecondary} />
+      </View>
       <Text style={[styles.text, { color: theme.text }]} numberOfLines={1}>
         {text}
       </Text>
-    </GlassSurface>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    marginTop: Spacing.two,
-    marginHorizontal: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    height: 40,
-    borderRadius: Radius.pill,
+  row: {
+    height: PINNED_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    overflow: 'hidden',
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.four,
+  },
+  tile: {
+    width: PIN_TILE_SIZE,
+    height: PIN_TILE_SIZE,
+    borderRadius: Radius.small + 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: {
     flex: 1,
-    fontSize: FontSize.subhead,
+    fontSize: FontSize.body,
+  },
+  pressed: {
+    opacity: 0.6,
   },
 });
